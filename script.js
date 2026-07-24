@@ -6,7 +6,6 @@ let totalTime = 60 * 60; // 60 minutes countdown
 let timerInterval;
 let isReviewMode = false;
 
-// Delay helper to avoid Groq Rate Limits
 const delay = ms => new Promise(res => setTimeout(res, ms));
 
 function getCurrentDateContext() {
@@ -45,73 +44,108 @@ async function generateGroqQuestions() {
 
     const dateCtx = getCurrentDateContext();
 
-    // 12 precise sub-chunks of MAX 10 questions each -> Guaranteed 100 Questions Total
+    // Guaranteed Chapter-by-Chapter Full Syllabus Prompt Array
     const subBatches = [
-        // Biology (30 Questions)
-        { subject: "BIOLOGY", count: 10, name: "জীববিজ্ঞান (১/৩)", prompt: "10 Medical Admission Biology MCQs in Bengali (Botany: Dr. Abul Hasan, Zoology: Gazi Azmal - 2026 Edition)." },
-        { subject: "BIOLOGY", count: 10, name: "জীববিজ্ঞান (২/৩)", prompt: "10 Medical Admission Biology MCQs in Bengali (Prof. Majeda Begum, Dr. Abul Alim - 2026 Edition)." },
-        { subject: "BIOLOGY", count: 10, name: "জীববিজ্ঞান (৩/৩)", prompt: "10 Medical Admission Biology MCQs in Bengali (Genetics, Human Physiology & Reproduction - 2026 Edition)." },
+        // Botany Chapters 1-12
+        { 
+            subject: "BIOLOGY", count: 10, name: "উদ্ভিদবিজ্ঞান (অধ্যায় ১-১২)", 
+            prompt: "Generate EXACTLY 10 Medical Admission MCQs in Bengali strictly from Botany Chapters 1 to 12 (Cell Structure, Cell Division, Microbes, Plant Physiology, Biotechnology, Genetics) written by Dr. Abul Hasan & Dr. Md. Abul Alim (2026 Edition). Ensure questions cover diverse chapters without skipping any." 
+        },
+        // Zoology Chapters 1-12
+        { 
+            subject: "BIOLOGY", count: 10, name: "প্রাণীবিজ্ঞান (অধ্যায় ১-১২)", 
+            prompt: "Generate EXACTLY 10 Medical Admission MCQs in Bengali strictly from Zoology Chapters 1 to 12 (Animal Diversity, Hydra, Grasshopper, Human Physiology, Digestion, Circulation, Genetics) written by Gazi Azmal, Gazi Asmat & Prof. Majeda Begum (2026 Edition)." 
+        },
+        // Biology Mixed Chapters
+        { 
+            subject: "BIOLOGY", count: 10, name: "জীববিজ্ঞান রিভিশন ও গুরুত্বপূর্ণ অধ্যায়", 
+            prompt: "Generate EXACTLY 10 Medical Admission Biology MCQs in Bengali selecting questions randomly across Botany & Zoology 1st and 2nd paper all chapters (2026 Edition)." 
+        },
         
-        // Chemistry (25 Questions)
-        { subject: "CHEMISTRY", count: 10, name: "রসায়ন (১/৩)", prompt: "10 Medical Admission Chemistry MCQs in Bengali (Hazari & Nag - 2026 Edition)." },
-        { subject: "CHEMISTRY", count: 10, name: "রসায়ন (২/৩)", prompt: "10 Medical Admission Chemistry MCQs in Bengali (Sanjit Kumar Guha, Dr. Haradhan Dutta - 2026 Edition)." },
-        { subject: "CHEMISTRY", count: 5,  name: "রসায়ন (৩/৩)", prompt: "5 Medical Admission Chemistry MCQs in Bengali (Organic & Environmental Chemistry - 2026 Edition)." },
+        // Chemistry 1st Paper Chapters 1-5
+        { 
+            subject: "CHEMISTRY", count: 10, name: "রসায়ন ১ম পত্র (অধ্যায় ১-৫)", 
+            prompt: "Generate EXACTLY 10 Medical Admission MCQs in Bengali covering Chemistry 1st Paper Chapters 1 to 5 (Qualitative Chemistry, Periodic Properties, Chemical Change, Practical Chem) written by Hazari & Nag and Sanjit Kumar Guha (2026 Edition)." 
+        },
+        // Chemistry 2nd Paper Chapters 1-5
+        { 
+            subject: "CHEMISTRY", count: 10, name: "রসায়ন ২য় পত্র (অধ্যায় ১-৫)", 
+            prompt: "Generate EXACTLY 10 Medical Admission MCQs in Bengali covering Chemistry 2nd Paper Chapters 1 to 5 (Environmental Chemistry, Organic Chemistry, Quantitative Chem, Electrochemistry) written by Hazari & Nag, Dr. Haradhan Dutta & Swapan Kumar Roy (2026 Edition)." 
+        },
+        // Chemistry Industry & Applied
+        { 
+            subject: "CHEMISTRY", count: 5, name: "রসায়ন বিশেষ প্রয়োগিক অধ্যায়", 
+            prompt: "Generate EXACTLY 5 Medical Admission MCQs in Bengali from Industrial Chemistry, Polymer, and Food Chemistry chapters (2026 Edition)." 
+        },
         
-        // Physics (15 Questions)
-        { subject: "PHYSICS", count: 10, name: "পদার্থবিজ্ঞান (১/২)", prompt: "10 Medical Admission Physics MCQs in Bengali (Prof. Md. Ishaak, Shahjahan Tapan - 2026 Edition)." },
-        { subject: "PHYSICS", count: 5,  name: "পদার্থবিজ্ঞান (২/২)", prompt: "5 Medical Admission Physics MCQs in Bengali (Modern Physics, Electricity & Optics - 2026 Edition)." },
+        // Physics 1st Paper Chapters 1-10
+        { 
+            subject: "PHYSICS", count: 8, name: "পদার্থবিজ্ঞান ১ম পত্র (অধ্যায় ১-১০)", 
+            prompt: "Generate EXACTLY 8 Medical Admission MCQs in Bengali covering Physics 1st Paper Chapters 1 to 10 (Vectors, Dynamics, Gravitation, Waves, Ideal Gas) written by Prof. Md. Ishaak & Shahjahan Tapan (2026 Edition)." 
+        },
+        // Physics 2nd Paper Chapters 1-11
+        { 
+            subject: "PHYSICS", count: 7, name: "পদার্থবিজ্ঞান ২য় পত্র (অধ্যায় ১-১১)", 
+            prompt: "Generate EXACTLY 7 Medical Admission MCQs in Bengali covering Physics 2nd Paper Chapters 1 to 11 (Thermodynamics, Current Electricity, Optics, Atomic Physics, Electronics) written by Dr. Gias Uddin & Prof. Ishaak (2026 Edition)." 
+        },
         
-        // English (15 Questions)
-        { subject: "ENGLISH", count: 10, name: "ইংরেজি (১/২)", prompt: "10 Medical Admission English MCQs (Synonym, Antonym, Preposition, Correction, Sentence Structure)." },
-        { subject: "ENGLISH", count: 5,  name: "ইংরেজি (২/২)", prompt: "5 Medical Admission English MCQs (Voice, Narration, Idioms, Transformation)." },
+        // English Grammar & Vocabulary
+        { 
+            subject: "ENGLISH", count: 10, name: "ইংরেজি গ্রামার ও ভোকাবুলারি", 
+            prompt: "Generate EXACTLY 10 Medical Admission English MCQs focusing on Synonyms, Antonyms, Appropriate Prepositions, Subject-Verb Agreement, and Correction." 
+        },
+        { 
+            subject: "ENGLISH", count: 5, name: "ইংরেজি ব্যবহারিক ও ট্রান্সফরমেশন", 
+            prompt: "Generate EXACTLY 5 Medical Admission English MCQs focusing on Voice, Narration, Idioms & Phrases, and Sentence Transformation." 
+        },
         
-        // GK & Ethical Values (15 Questions)
-        { subject: "GK", count: 10, name: "সাধারণ জ্ঞান (১/২)", prompt: `10 Medical Admission GK MCQs in Bengali (Current affairs year ${dateCtx.year} up to ${dateCtx.dateStr}, Liberation War, Bangabandhu, Healthcare Achievements).` },
-        { subject: "GK", count: 5,  name: "মানবিক মূল্যবোধ (২/২)", prompt: "5 Medical Admission MCQs in Bengali focusing on Medical Ethics, Human Values & Moral Reasoning." }
+        // GK & Ethics
+        { 
+            subject: "GK", count: 10, name: "সাম্প্রতিক সা.জ্ঞান ও ইতিহাস", 
+            prompt: `Generate EXACTLY 10 Medical Admission GK MCQs in Bengali covering Bangladesh History, 1971 Liberation War, Father of the Nation, and Live Current Affairs for year ${dateCtx.year} up to ${dateCtx.dateStr}.` 
+        },
+        { 
+            subject: "GK", count: 5, name: "চিকিৎসা নৈতিকতা ও মানবিক গুণাবলী", 
+            prompt: "Generate EXACTLY 5 Medical Admission MCQs in Bengali covering Medical Ethics, Human Values, Professional Conduct, and Empathy in Patient Care." 
+        }
     ];
 
     try {
         for (let i = 0; i < subBatches.length; i++) {
             const b = subBatches[i];
-            document.getElementById('loading-text').innerText = `${b.name} তৈরি হচ্ছে (${questions.length}/১০০টি তৈরি সম্পন্ন)...`;
+            document.getElementById('loading-text').innerText = `${b.name} প্রস্তুত হচ্ছে (${questions.length}/১০০)...`;
             
-            if (i > 0) await delay(1000); // 1 sec delay to avoid rate limit
+            if (i > 0) await delay(1000);
 
             let fetched = await fetchGroqBatchWithRetry(b.prompt, b.count, b.subject, dateCtx);
             questions = questions.concat(fetched);
-        }
-
-        // Safety check if slight discrepancy occurs
-        if (questions.length < 100) {
-            console.warn(`Generated ${questions.length} questions. Adjusting user answers array.`);
         }
 
         document.getElementById('loading-overlay').style.display = 'none';
         initQuiz();
     } catch (error) {
         console.error("Groq Generation Error:", error);
-        alert("প্রশ্ন জেনারেট করতে সমস্যা হয়েছে। দয়া করে পুনরায় চেষ্টা করুন।");
+        alert("প্রশ্ন তৈরি করতে সমস্যা হয়েছে। নতুন পরীক্ষা শুরু বাটন চাপুন।");
         document.getElementById('loading-overlay').style.display = 'none';
     }
 }
 
-// Resilient API Call with Retry & Fallback Model
 async function fetchGroqBatchWithRetry(specificPrompt, expectedCount, subjectName, dateCtx, attempt = 0) {
     const primaryModel = "llama-3.3-70b-versatile";
     const fallbackModel = "llama-3.1-8b-instant";
-
     const currentModel = attempt > 1 ? fallbackModel : primaryModel;
 
-    const promptText = `You are an official Bangladesh Medical Admission Test Question Setter.
-    Current Date: ${dateCtx.dateStr}, Year: ${dateCtx.year}.
+    const promptText = `You are an official Bangladesh Medical College Admission Test Question Setter.
+    Live Date Context: ${dateCtx.dateStr}, Year: ${dateCtx.year}.
     
     TASK: ${specificPrompt}
     
-    CRITICAL RULES:
-    1. Generate EXACTLY ${expectedCount} MCQs in the "questions" array.
-    2. All info must strictly match 2026 edition textbooks. Keep explanations brief and precise (max 25 words per question).
+    MANDATORY CRITERIA:
+    1. Output EXACTLY ${expectedCount} questions in raw Bengali text.
+    2. Information MUST be 100% textbook accurate based on specified 2026 edition authors.
+    3. Include exact textbook author and chapter reference in the "reference" field (e.g. "রেফারেন্স: ড. আবুল হাসান (২০২৬ সংস্করণ) - ৫ম অধ্যায় (উদ্ভিদ শারীরতত্ত্ব)").
     
-    OUTPUT JSON FORMAT ONLY (NO MARKDOWN CODE BLOCKS):
+    JSON SCHEMA ONLY (NO MARKDOWN CODE BLOCK):
     {
       "questions": [
         {
@@ -119,8 +153,8 @@ async function fetchGroqBatchWithRetry(specificPrompt, expectedCount, subjectNam
           "options": ["অপশন ১", "অপশন ২", "অপশন ৩", "অপশন ৪"],
           "answer": 0,
           "subject": "${subjectName}",
-          "explanation": "২০২৬ সংস্করণের প্রামাণ্য বই অনুযায়ী সঠিক উত্তরের সংক্ষিপ্ত ব্যাখ্যা।",
-          "reference": "রেফারেন্স: ড. আবুল হাসান / হাজারী ও নাগ (২০২৬ সংস্করণ)"
+          "explanation": "২০২৬ সংস্করণের প্রামাণ্য বই ও নির্দিষ্ট অধ্যায় অনুযায়ী সঠিক ব্যাখ্যা।",
+          "reference": "রেফারেন্স: লেখক ও অধ্যায়ের নাম (২০২৬ সংস্করণ)"
         }
       ]
     }`;
@@ -146,9 +180,7 @@ async function fetchGroqBatchWithRetry(specificPrompt, expectedCount, subjectNam
             return await fetchGroqBatchWithRetry(specificPrompt, expectedCount, subjectName, dateCtx, attempt + 1);
         }
 
-        if (!response.ok) {
-            throw new Error(`Groq Response Status: ${response.status}`);
-        }
+        if (!response.ok) throw new Error(`Groq Status: ${response.status}`);
 
         const data = await response.json();
         const parsedData = JSON.parse(data.choices[0].message.content);
@@ -159,7 +191,7 @@ async function fetchGroqBatchWithRetry(specificPrompt, expectedCount, subjectNam
             await delay(1500);
             return await fetchGroqBatchWithRetry(specificPrompt, expectedCount, subjectName, dateCtx, attempt + 1);
         }
-        return []; // Return empty array if batch fails so app doesn't crash
+        return [];
     }
 }
 
@@ -224,8 +256,10 @@ function loadQuestion(index) {
     if (isReviewMode) {
         explanationBox.style.display = 'block';
         document.getElementById('explanation-text').innerHTML = `
-            <strong>${q.reference ? q.reference : '২০২৬ সংস্করণের প্রামাণ্য বই'}</strong><br/>
-            ${q.explanation || "এই প্রশ্নের সঠিক উত্তর ও তথ্য প্রদান করা হলো।"}
+            <div style="color: #10b981; font-weight: bold; margin-bottom: 5px;">
+                ${q.reference ? q.reference : '২০২৬ সংস্করণের প্রামাণ্য বই'}
+            </div>
+            <div>${q.explanation || "সঠিক উত্তর ও প্রামাণ্য তথ্য অনুযায়ী সাজানো হয়েছে।"}</div>
         `;
     } else {
         explanationBox.style.display = 'none';
