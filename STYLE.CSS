@@ -21,7 +21,7 @@
 body {
     background-color: var(--bg-color);
     /* Custom Background Image Setup */
-    background-image: linear-gradient(rgba(11, 17, 32, 0.92), rgba(11, 17, 32, 0.92)), url('https://images.unsplash.com/photo-1576091160399-112ba8d25d1d?auto=format&fit=crop&w=1920&q=80');
+    background-image: linear-gradient(rgba(11, 17, 32, 0.92), rgba(11, 17, 32, 0.92)), url('Md.Emtiaz Hoosain Sami.jpg');
     background-size: cover;
     background-position: center;
     background-attachment: fixed;
