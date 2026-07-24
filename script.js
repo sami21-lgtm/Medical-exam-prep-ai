@@ -1,10 +1,15 @@
 let groqApiKey = localStorage.getItem("GROQ_API_KEY") || "";
 let questions = [];
-let userAnswers = new Array(100).fill(null);
+let userAnswers = [];
 let currentQuestionIndex = 0;
-let totalTime = 60 * 60; // 60 minutes countdown
+let totalTime = 60 * 60; // Default 60 mins
 let timerInterval;
 let isReviewMode = false;
+let selectedSubjectMode = "FULL";
+
+// LocalStorage Keys for History & Question Memory
+const SEEN_QS_KEY = "MED_EXAM_SEEN_QUESTIONS_2026";
+const HISTORY_KEY = "MED_EXAM_HISTORY_2026";
 
 const delay = ms => new Promise(res => setTimeout(res, ms));
 
@@ -18,7 +23,7 @@ function getCurrentDateContext() {
 }
 
 function setApiKey() {
-    let key = prompt("আপনার Groq Cloud (gsk_...) API Key লিখুন:", groqApiKey);
+    let key = prompt("আপনার Groq Cloud (gsk_...) API Key দিন:", groqApiKey);
     if (key) {
         groqApiKey = key.trim();
         localStorage.setItem("GROQ_API_KEY", groqApiKey);
@@ -26,102 +31,166 @@ function setApiKey() {
     }
 }
 
+function getSeenQuestionIDs() {
+    try {
+        return JSON.parse(localStorage.getItem(SEEN_QS_KEY)) || [];
+    } catch (e) {
+        return [];
+    }
+}
+
+function saveSeenQuestions(newQs) {
+    let seenList = getSeenQuestionIDs();
+    newQs.forEach(q => {
+        if (q.text) seenList.push(q.text.trim().substring(0, 40));
+    });
+    // Keep last 1000 questions memory to avoid repetition
+    if (seenList.length > 1000) seenList = seenList.slice(-1000);
+    localStorage.setItem(SEEN_QS_KEY, JSON.stringify(seenList));
+}
+
+function selectSubjectFilter(mode) {
+    selectedSubjectMode = mode;
+    
+    // Update active UI badges
+    const badges = document.querySelectorAll('.subject-badges .badge');
+    badges.forEach(b => b.classList.remove('active'));
+    
+    if (mode === 'FULL') badges[0]?.classList.add('active');
+    else if (mode === 'CHEM') badges[1]?.classList.add('active');
+    else if (mode === 'PHY') badges[2]?.classList.add('active');
+    else if (mode === 'ENG') badges[3]?.classList.add('active');
+    else if (mode === 'GK') badges[4]?.classList.add('active');
+
+    generateGroqQuestions();
+}
+
 async function generateGroqQuestions() {
     if (!groqApiKey) {
         setApiKey();
         if (!groqApiKey) {
-            alert("Groq AI দিয়ে প্রশ্ন জেনারেট করতে API Key দেওয়া আবশ্যক!");
+            alert("Groq AI দিয়ে প্রশ্ন জেনারেট করতে API Key দিতে হবে!");
             return;
         }
     }
 
-    document.getElementById('loading-overlay').style.display = 'flex';
+    const loader = document.getElementById('loading-overlay');
+    if (loader) loader.style.display = 'flex';
     document.getElementById('result-modal').style.display = 'none';
     
     questions = [];
-    userAnswers = new Array(100).fill(null);
     isReviewMode = false;
 
     const dateCtx = getCurrentDateContext();
+    let subBatches = [];
 
-    // Exactly 100 Questions divided into 6 Optimized Batches (Total = 100)
-    const subBatches = [
-        { 
-            subject: "BIOLOGY", count: 15, name: "উদ্ভিদবিজ্ঞান (অধ্যায় ১-১২)", 
-            prompt: "Generate EXACTLY 15 Medical Admission MCQs in Bengali strictly from Botany Chapters 1 to 12 (Cell Structure, Cell Division, Microbes, Plant Physiology, Biotechnology, Genetics) written by Dr. Abul Hasan & Dr. Md. Abul Alim (2026 Edition)." 
-        },
-        { 
-            subject: "BIOLOGY", count: 15, name: "প্রাণীবিজ্ঞান (অধ্যায় ১-১২)", 
-            prompt: "Generate EXACTLY 15 Medical Admission MCQs in Bengali strictly from Zoology Chapters 1 to 12 (Animal Diversity, Hydra, Grasshopper, Human Physiology, Digestion, Circulation, Genetics) written by Gazi Azmal & Prof. Majeda Begum (2026 Edition)." 
-        },
-        { 
-            subject: "CHEMISTRY", count: 13, name: "রসায়ন ১ম পত্র (তত্ত্বীয় ও ১-৩ সে. গাণিতিক)", 
-            prompt: "Generate EXACTLY 13 Medical Admission MCQs in Bengali covering Chemistry 1st Paper Chapters 1 to 5 (Hazari & Nag, Sanjit Guha 2026 Edition). MUST INCLUDE 4-5 short calculator-free numerical problems solvable in 1-3 seconds (pH of 0.01M HCl, oxidation state, gas laws)." 
-        },
-        { 
-            subject: "CHEMISTRY", count: 12, name: "রসায়ন ২য় পত্র (তত্ত্বীয় ও গাণিতিক শর্টকাট)", 
-            prompt: "Generate EXACTLY 12 Medical Admission MCQs in Bengali covering Chemistry 2nd Paper Chapters 1 to 5 (Hazari & Nag, Dr. Haradhan Dutta 2026 Edition). MUST INCLUDE 4-5 short 1-3 second mental numericals from Electrochemistry and Environmental Chemistry." 
-        },
-        { 
-            subject: "PHYSICS", count: 15, name: "পদার্থবিজ্ঞান ১ম ও ২য় পত্র (১-৩ সে. গাণিতিক)", 
-            prompt: "Generate EXACTLY 15 Medical Admission MCQs in Bengali covering Physics 1st & 2nd Paper (Prof. Md. Ishaak, Shahjahan Tapan, Dr. Gias Uddin 2026 Edition). MUST INCLUDE 6-7 calculator-free 1-3 second numerical MCQs (Vector, Kinetic energy, Equivalent resistance, Half-life, Wavelength)." 
-        },
-        { 
-            subject: "ENGLISH & GK", count: 30, name: "ইংরেজি ও সাধারণ জ্ঞান (নৈতিকতা সহ)", 
-            prompt: `Generate EXACTLY 30 Medical Admission MCQs in Bengali containing:
-            1. 15 English MCQs (Synonyms, Antonyms, Prepositions, Voice, Correction).
-            2. 10 GK MCQs (Bangladesh History, 1971 Liberation War, Father of the Nation, and Current Affairs for ${dateCtx.year} up to ${dateCtx.dateStr}).
-            3. 5 Medical Ethics MCQs (Ethical values & Professional Conduct).` 
-        }
-    ];
+    // Official Medical Admission Distribution (Total 100 Marks)
+    // Bio: 30, Chem: 25, Physics: 15, English: 15, GK & Values: 15
+    if (selectedSubjectMode === "FULL") {
+        totalTime = 60 * 60;
+        subBatches = [
+            { 
+                subject: "জীববিজ্ঞান", count: 30, 
+                prompt: "Generate EXACTLY 30 Medical MCQs in Bengali based strictly on 2026 Editions of Botany (Dr. Abul Hasan, Prof. Dr. Abdul Alim) and Zoology (Gazi Azmal, Prof. Majeda Begum). Include 4-5 genetics/cell division mental calculations." 
+            },
+            { 
+                subject: "রসায়ন", count: 25, 
+                prompt: "Generate EXACTLY 25 Medical MCQs in Bengali covering Chemistry 1st & 2nd Paper (Hazari & Nag, Dr. Sanjit Kumar Guha, Dr. Haradhan Dutta, Swapan Kumar Roy - 2026 Edition). MUST INCLUDE 8-10 calculator-free shortcut numericals (pH, oxidation state, gas laws, electrochemistry)." 
+            },
+            { 
+                subject: "পদার্থবিজ্ঞান", count: 15, 
+                prompt: "Generate EXACTLY 15 Medical MCQs in Bengali covering Physics 1st & 2nd Paper (Prof. Md. Ishaak, Shahjahan Tapan, Dr. Gias Uddin, Dr. Amir Hossain Khan - 2026 Edition). MUST INCLUDE 6-8 calculator-free shortcut numericals (Vector, kinetic energy, resistance, half-life, optics)." 
+            },
+            { 
+                subject: "ইংরেজি", count: 15, 
+                prompt: "Generate EXACTLY 15 Medical Admission English MCQs focusing on Synonyms, Antonyms, Appropriate Prepositions, Voice, Narration, and Sentence Correction." 
+            },
+            { 
+                subject: "সাধারণ জ্ঞান ও মানবিক গুণাবলী", count: 15, 
+                prompt: `Generate EXACTLY 15 Medical MCQs in Bengali covering Bangladesh Liberation War 1971, History of Bangladesh, Current Affairs up to ${dateCtx.dateStr} (${dateCtx.year}), and Medical Ethics/Human Values.` 
+            }
+        ];
+    } else if (selectedSubjectMode === "CHEM") {
+        totalTime = 15 * 60;
+        subBatches = [{
+            subject: "রসায়ন", count: 25,
+            prompt: "Generate EXACTLY 25 Medical MCQs in Bengali (Hazari & Nag, Sanjit Guha, Haradhan Dutta 2026 Edition) with 10 calculator-free numericals solvable in 1-3 seconds."
+        }];
+    } else if (selectedSubjectMode === "PHY") {
+        totalTime = 12 * 60;
+        subBatches = [{
+            subject: "পদার্থবিজ্ঞান", count: 15,
+            prompt: "Generate EXACTLY 15 Medical MCQs in Bengali (Prof. Md. Ishaak, Shahjahan Tapan, Gias Uddin 2026 Edition) with 8 calculator-free shortcut numericals solvable in 1-3 seconds."
+        }];
+    } else if (selectedSubjectMode === "ENG") {
+        totalTime = 9 * 60;
+        subBatches = [{
+            subject: "ইংরেজি", count: 15,
+            prompt: "Generate EXACTLY 15 Medical Admission English MCQs focusing on Synonyms, Antonyms, Appropriate Prepositions, Voice, Narration, and Correction."
+        }];
+    } else if (selectedSubjectMode === "GK") {
+        totalTime = 9 * 60;
+        subBatches = [{
+            subject: "সাধারণ জ্ঞান ও মানবিক গুণাবলী", count: 15,
+            prompt: `Generate EXACTLY 15 Medical MCQs in Bengali covering Bangladesh History, 1971 War, Current Affairs for ${dateCtx.year} up to ${dateCtx.dateStr}, and Medical Ethics.`
+        }];
+    }
+
+    userAnswers = new Array(
+        subBatches.reduce((total, b) => total + b.count, 0)
+    ).fill(null);
 
     try {
+        const seenList = getSeenQuestionIDs();
+
         for (let i = 0; i < subBatches.length; i++) {
             const b = subBatches[i];
-            document.getElementById('loading-text').innerText = `${b.name} লোড হচ্ছে (${questions.length}/১০০)...`;
+            document.getElementById('loading-text').innerText = `${b.subject} বিষয় তৈরি হচ্ছে (${questions.length} টি লোড হয়েছে)...`;
             
-            // Fetch batch with guaranteed 100% completion retry loop
-            let fetched = await fetchBatchGuaranteed(b.prompt, b.count, b.subject, dateCtx);
+            if (i > 0) await delay(1200);
+
+            let fetched = await fetchBatchGuaranteed(b.prompt, b.count, b.subject, dateCtx, seenList);
             questions = questions.concat(fetched);
-            
-            // Short 800ms delay between calls
-            if (i < subBatches.length - 1) await delay(800);
         }
 
-        document.getElementById('loading-overlay').style.display = 'none';
+        saveSeenQuestions(questions);
+        if (loader) loader.style.display = 'none';
         initQuiz();
     } catch (error) {
         console.error("Groq Generation Error:", error);
-        alert("প্রশ্ন লোড করতে সমস্যা হয়েছে। দয়া করে পেজটি আবার রিফ্রেশ দিন।");
-        document.getElementById('loading-overlay').style.display = 'none';
+        alert("প্রশ্ন জেনারেট করতে সমস্যা হয়েছে। দয়া করে আবার চেষ্টা করুন।");
+        if (loader) loader.style.display = 'none';
     }
 }
 
-async function fetchBatchGuaranteed(specificPrompt, expectedCount, subjectName, dateCtx) {
+async function fetchBatchGuaranteed(specificPrompt, expectedCount, subjectName, dateCtx, seenList) {
     let resultQuestions = [];
     let attempts = 0;
-    
-    // Fast & highly available model
     const modelName = "llama-3.1-8b-instant";
 
     while (resultQuestions.length < expectedCount && attempts < 4) {
         attempts++;
         const needed = expectedCount - resultQuestions.length;
         const uniqueSeed = `${Date.now()}_${Math.floor(Math.random() * 1000000)}_${attempts}`;
+        
+        // Random 10 sample seen texts to prevent repeat
+        const recentSeenSample = seenList.slice(-15).join(" | ");
 
-        const promptText = `You are an official Bangladesh Medical College Admission Test Question Setter.
+        const promptText = `You are an official Bangladesh Medical Admission Test Question Setter.
         Live Date Context: ${dateCtx.dateStr}, Year: ${dateCtx.year}.
-        UNIQUE SEED: ${uniqueSeed}
+        UNIQUE RANDOM SEED: ${uniqueSeed}
+        PREVIOUSLY ASKED QUESTIONS TO AVOID (DO NOT REPEAT): [${recentSeenSample}]
         
         TASK: ${specificPrompt}
         Provide EXACTLY ${needed} unique MCQs in Bengali.
         
         CRITICAL RULES:
-        1. Any mathematical question in Physics/Chemistry MUST be solvable without a calculator within 1 to 3 seconds using simple mental math or shortcuts.
-        2. Absolute Accuracy: Double check answer indices according to 2026 Bangladeshi edition textbooks.
-        3. Include exact textbook author and chapter name in "reference".
+        1. Writers & Textbooks: Base strictly on 2026 Bangladeshi edition textbooks (Biology: Hasan, Azmal, Majeda, Alim; Chemistry: Hazari-Nag, Guha, Dutta; Physics: Ishaak, Tapan, Gias Uddin).
+        2. Math/Numerical Rule: For Physics, Chemistry, and Biology Genetics Math, ANY calculation MUST be solvable WITHOUT a calculator within 1 to 3 seconds using mental shortcuts/formulas.
+        3. Shortcut Explanation Requirement: In the "explanation" field, MUST include "⚡ ১-৩ সেকেন্ডের শর্টকাট ট্রিক / সূত্র: [শর্টকাট সূত্র বা টেকনিক]"!
+        4. Detailed Reference with Page Number: In the "reference" field, write exact author, chapter, and estimated page number from 2026 edition (e.g. "রেফারেন্স: ড. আবুল হাসান (উদ্ভিদবিজ্ঞান ২০২৬ সংস্করণ), অধ্যায় ৩, পৃষ্ঠা ৮৫").
         
-        OUTPUT RAW JSON ONLY (NO MARKDOWN CODE BLOCKS):
+        OUTPUT RAW JSON ONLY (NO MARKDOWN WRAPPERS):
         {
           "questions": [
             {
@@ -129,8 +198,8 @@ async function fetchBatchGuaranteed(specificPrompt, expectedCount, subjectName, 
               "options": ["অপশন ১", "অপশন ২", "অপশন ৩", "অপশন ৪"],
               "answer": 0,
               "subject": "${subjectName}",
-              "explanation": "২০২৬ সংস্করণের মূল বই অনুযায়ী ১-৩ সেকেন্ডে সমাধানের শর্টকাট ব্যাখ্যা।",
-              "reference": "রেফারেন্স: লেখক ও অধ্যায়ের নাম (২০২৬ সংস্করণ)"
+              "explanation": "⚡ ১-৩ সেকেন্ডের শর্টকাট ট্রিক / সূত্র: ...। ২০২৬ প্রামাণ্য পাঠ্যবই অনুযায়ী বিস্তারিত ব্যাখ্যা।",
+              "reference": "রেফারেন্স: লেখক ও অধ্যায়ের নাম, পৃষ্ঠা নং (২০২৬ সংস্করণ)"
             }
           ]
         }`;
@@ -145,24 +214,23 @@ async function fetchBatchGuaranteed(specificPrompt, expectedCount, subjectName, 
                 body: JSON.stringify({
                     model: modelName,
                     messages: [{ role: "user", content: promptText }],
-                    temperature: 0.3,
+                    temperature: 0.35,
                     max_tokens: 4000,
                     response_format: { type: "json_object" }
                 })
             });
 
             if (response.status === 429) {
-                await delay(2500); // Pause if rate limited
+                await delay(2500);
                 continue;
             }
 
-            if (!response.ok) throw new Error(`Groq HTTP Error: ${response.status}`);
+            if (!response.ok) throw new Error(`Groq HTTP Status: ${response.status}`);
 
             const data = await response.json();
             let rawContent = data.choices[0].message.content;
-            
-            // Clean markdown formatting if present
             rawContent = rawContent.replace(/```json/gi, '').replace(/```/g, '').trim();
+            
             const parsedData = JSON.parse(rawContent);
             const batchQs = parsedData.questions || parsedData.Questions || [];
 
@@ -180,7 +248,6 @@ async function fetchBatchGuaranteed(specificPrompt, expectedCount, subjectName, 
 
 function initQuiz() {
     currentQuestionIndex = 0;
-    totalTime = 60 * 60;
     userAnswers = new Array(questions.length).fill(null);
     renderOMRGrid();
     loadQuestion(0);
@@ -191,6 +258,7 @@ function initQuiz() {
 
 function renderOMRGrid() {
     const gridContainer = document.getElementById('omr-grid');
+    if (!gridContainer) return;
     gridContainer.innerHTML = '';
     
     for (let i = 0; i < questions.length; i++) {
@@ -209,7 +277,7 @@ function loadQuestion(index) {
     const q = questions[index];
     
     document.getElementById('question-number').innerText = `প্রশ্ন নং: ${index + 1}/${questions.length}`;
-    document.getElementById('subject-tag').innerText = q.subject || "GENERAL";
+    document.getElementById('subject-tag').innerText = q.subject || "সাধারণ";
     document.getElementById('question-text').innerText = q.text;
     
     const optionsContainer = document.getElementById('options-container');
@@ -238,12 +306,8 @@ function loadQuestion(index) {
     const explanationBox = document.getElementById('explanation-box');
     if (isReviewMode) {
         explanationBox.style.display = 'block';
-        document.getElementById('explanation-text').innerHTML = `
-            <div style="color: #10b981; font-weight: bold; margin-bottom: 5px;">
-                ${q.reference ? q.reference : '২০২৬ সংস্করণের প্রামাণ্য বই'}
-            </div>
-            <div>${q.explanation || "সঠিক উত্তর ও প্রামাণ্য তথ্য অনুযায়ী সাজানো হয়েছে।"}</div>
-        `;
+        document.getElementById('explanation-ref').innerText = q.reference || "২০২৬ সংস্করণের প্রামাণ্য মূল বই";
+        document.getElementById('explanation-text').innerHTML = q.explanation || "সঠিক উত্তর ও প্রামাণ্য তথ্য অনুযায়ী সাজানো হয়েছে।";
     } else {
         explanationBox.style.display = 'none';
     }
@@ -309,14 +373,28 @@ function submitExam() {
     });
 
     const negative = wrong * 0.25;
-    const candidateDeduction = parseFloat(document.getElementById('candidate-type').value);
+    const candidateDeductionEl = document.getElementById('candidate-type');
+    const candidateDeduction = candidateDeductionEl ? parseFloat(candidateDeductionEl.value) : 0;
     const finalScore = (correct - negative - candidateDeduction).toFixed(2);
 
     document.getElementById('correct-count').innerText = correct;
     document.getElementById('wrong-count').innerText = wrong;
     document.getElementById('negative-marks').innerText = negative.toFixed(2);
-    document.getElementById('deduction-marks').innerText = candidateDeduction.toFixed(2);
+    if (document.getElementById('deduction-marks')) {
+        document.getElementById('deduction-marks').innerText = candidateDeduction.toFixed(2);
+    }
     document.getElementById('final-score').innerText = Math.max(0, finalScore);
+
+    // Save Exam Record to History
+    saveExamToHistory({
+        date: new Date().toLocaleString('bn-BD'),
+        score: finalScore,
+        correct: correct,
+        wrong: wrong,
+        totalQuestions: questions.length,
+        questionsData: questions,
+        userAnswersData: userAnswers
+    });
 
     document.getElementById('result-modal').style.display = 'flex';
 }
@@ -325,6 +403,70 @@ function reviewExam() {
     isReviewMode = true;
     document.getElementById('result-modal').style.display = 'none';
     loadQuestion(0);
+}
+
+/* Exam History System Functions */
+function saveExamToHistory(examRecord) {
+    let history = [];
+    try {
+        history = JSON.parse(localStorage.getItem(HISTORY_KEY)) || [];
+    } catch(e) { history = []; }
+    
+    history.unshift(examRecord); // Newest first
+    if (history.length > 20) history = history.slice(0, 20); // Keep last 20 exams
+    localStorage.setItem(HISTORY_KEY, JSON.stringify(history));
+}
+
+function openHistoryModal() {
+    let history = [];
+    try {
+        history = JSON.parse(localStorage.getItem(HISTORY_KEY)) || [];
+    } catch(e) { history = []; }
+
+    const listContainer = document.getElementById('history-list');
+    listContainer.innerHTML = '';
+
+    if (history.length === 0) {
+        listContainer.innerHTML = '<p style="text-align:center; padding:20px;">কোনো পূর্ববর্তী পরীক্ষার ইতিহাস পাওয়া যায়নি।</p>';
+    } else {
+        history.forEach((record, idx) => {
+            const item = document.createElement('div');
+            item.classList.add('history-item');
+            item.innerHTML = `
+                <div style="display:flex; justify-content:space-between; margin-bottom:8px;">
+                    <strong>🗓️ তারিখ: ${record.date}</strong>
+                    <span style="color:#0284c7; font-weight:bold;">স্কোর: ${record.score} / ${record.totalQuestions}</span>
+                </div>
+                <div style="font-size:13px; color:#64748b; margin-bottom:10px;">
+                    সঠিক: ${record.correct} | ভুল: ${record.wrong} | বিষয়: ${record.totalQuestions} টি প্রশ্ন
+                </div>
+                <button class="btn-start" onclick="loadSavedExamHistory(${idx})">📖 উত্তরমালা ও ব্যাখ্যা দেখুন</button>
+            `;
+            listContainer.appendChild(item);
+        });
+    }
+
+    document.getElementById('history-modal').style.display = 'flex';
+}
+
+function closeHistoryModal() {
+    document.getElementById('history-modal').style.display = 'none';
+}
+
+function loadSavedExamHistory(index) {
+    let history = [];
+    try {
+        history = JSON.parse(localStorage.getItem(HISTORY_KEY)) || [];
+    } catch(e) { history = []; }
+
+    if (history[index]) {
+        questions = history[index].questionsData;
+        userAnswers = history[index].userAnswersData;
+        isReviewMode = true;
+        closeHistoryModal();
+        renderOMRGrid();
+        loadQuestion(0);
+    }
 }
 
 window.onload = () => {
