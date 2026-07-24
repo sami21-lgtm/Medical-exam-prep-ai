@@ -44,119 +44,84 @@ async function generateGroqQuestions() {
 
     const dateCtx = getCurrentDateContext();
 
-    // Exactly 100 Questions Sub-Batches (Total = 100)
+    // Exactly 100 Questions divided into 6 Optimized Batches (Total = 100)
     const subBatches = [
-        // Botany Chapters 1-12 (10 Qs)
         { 
-            subject: "BIOLOGY", count: 10, name: "উদ্ভিদবিজ্ঞান (অধ্যায় ১-১২)", 
-            prompt: "Generate EXACTLY 10 Medical Admission MCQs in Bengali strictly from Botany Chapters 1 to 12 (Cell Structure, Cell Division, Microbes, Plant Physiology, Biotechnology, Genetics) written by Dr. Abul Hasan & Dr. Md. Abul Alim (2026 Edition)." 
+            subject: "BIOLOGY", count: 15, name: "উদ্ভিদবিজ্ঞান (অধ্যায় ১-১২)", 
+            prompt: "Generate EXACTLY 15 Medical Admission MCQs in Bengali strictly from Botany Chapters 1 to 12 (Cell Structure, Cell Division, Microbes, Plant Physiology, Biotechnology, Genetics) written by Dr. Abul Hasan & Dr. Md. Abul Alim (2026 Edition)." 
         },
-        // Zoology Chapters 1-12 (10 Qs)
         { 
-            subject: "BIOLOGY", count: 10, name: "প্রাণীবিজ্ঞান (অধ্যায় ১-১২)", 
-            prompt: "Generate EXACTLY 10 Medical Admission MCQs in Bengali strictly from Zoology Chapters 1 to 12 (Animal Diversity, Hydra, Grasshopper, Human Physiology, Digestion, Circulation, Genetics) written by Gazi Azmal, Gazi Asmat & Prof. Majeda Begum (2026 Edition)." 
+            subject: "BIOLOGY", count: 15, name: "প্রাণীবিজ্ঞান (অধ্যায় ১-১২)", 
+            prompt: "Generate EXACTLY 15 Medical Admission MCQs in Bengali strictly from Zoology Chapters 1 to 12 (Animal Diversity, Hydra, Grasshopper, Human Physiology, Digestion, Circulation, Genetics) written by Gazi Azmal & Prof. Majeda Begum (2026 Edition)." 
         },
-        // Biology Full Syllabus Revision (10 Qs)
         { 
-            subject: "BIOLOGY", count: 10, name: "জীববিজ্ঞান রিভিশন ও সকল অধ্যায়", 
-            prompt: "Generate EXACTLY 10 Medical Admission Biology MCQs in Bengali selecting questions randomly across Botany & Zoology 1st and 2nd paper all chapters (2026 Edition)." 
+            subject: "CHEMISTRY", count: 13, name: "রসায়ন ১ম পত্র (তত্ত্বীয় ও ১-৩ সে. গাণিতিক)", 
+            prompt: "Generate EXACTLY 13 Medical Admission MCQs in Bengali covering Chemistry 1st Paper Chapters 1 to 5 (Hazari & Nag, Sanjit Guha 2026 Edition). MUST INCLUDE 4-5 short calculator-free numerical problems solvable in 1-3 seconds (pH of 0.01M HCl, oxidation state, gas laws)." 
         },
-        
-        // Chemistry 1st Paper (10 Qs)
         { 
-            subject: "CHEMISTRY", count: 10, name: "রসায়ন ১ম পত্র (তত্ত্বীয় ও ১-৩ সেকেন্ডের গাণিতিক)", 
-            prompt: "Generate EXACTLY 10 Medical Admission MCQs in Bengali covering Chemistry 1st Paper Chapters 1 to 5 (Hazari & Nag, Sanjit Guha 2026 Edition). MUST INCLUDE 3-4 short calculator-free numerical problems solvable in 1-3 seconds (e.g., pH calculation of 0.01M HCl, oxidation state, gas law direct proportions, mole ratios)." 
+            subject: "CHEMISTRY", count: 12, name: "রসায়ন ২য় পত্র (তত্ত্বীয় ও গাণিতিক শর্টকাট)", 
+            prompt: "Generate EXACTLY 12 Medical Admission MCQs in Bengali covering Chemistry 2nd Paper Chapters 1 to 5 (Hazari & Nag, Dr. Haradhan Dutta 2026 Edition). MUST INCLUDE 4-5 short 1-3 second mental numericals from Electrochemistry and Environmental Chemistry." 
         },
-        // Chemistry 2nd Paper (10 Qs)
         { 
-            subject: "CHEMISTRY", count: 10, name: "রসায়ন ২য় পত্র (তত্ত্বীয় ও গাণিতিক শর্টকাট)", 
-            prompt: "Generate EXACTLY 10 Medical Admission MCQs in Bengali covering Chemistry 2nd Paper Chapters 1 to 5 (Hazari & Nag, Dr. Haradhan Dutta 2026 Edition). MUST INCLUDE short 1-3 second mental numericals from Electrochemistry, Organic Chemistry, and Environmental Chemistry." 
+            subject: "PHYSICS", count: 15, name: "পদার্থবিজ্ঞান ১ম ও ২য় পত্র (১-৩ সে. গাণিতিক)", 
+            prompt: "Generate EXACTLY 15 Medical Admission MCQs in Bengali covering Physics 1st & 2nd Paper (Prof. Md. Ishaak, Shahjahan Tapan, Dr. Gias Uddin 2026 Edition). MUST INCLUDE 6-7 calculator-free 1-3 second numerical MCQs (Vector, Kinetic energy, Equivalent resistance, Half-life, Wavelength)." 
         },
-        // Chemistry Industry & Applied (5 Qs)
         { 
-            subject: "CHEMISTRY", count: 5, name: "রসায়ন অর্থনৈতিক ও প্রয়োগিক", 
-            prompt: "Generate EXACTLY 5 Medical Admission MCQs in Bengali from Industrial Chemistry, Polymer, and Food Chemistry chapters (2026 Edition)." 
-        },
-        
-        // Physics 1st Paper (8 Qs)
-        { 
-            subject: "PHYSICS", count: 8, name: "পদার্থবিজ্ঞান ১ম পত্র (গাণিতিক শর্টকাট সহ)", 
-            prompt: "Generate EXACTLY 8 Medical Admission MCQs in Bengali covering Physics 1st Paper Chapters 1 to 10 (Prof. Md. Ishaak, Shahjahan Tapan 2026 Edition). MUST INCLUDE 3-4 calculator-free 1-3 second numerical MCQs (e.g. Vector resultants, Kinetic energy direct ratios, Work formula, Wave velocity, Gravitational constants)." 
-        },
-        // Physics 2nd Paper (7 Qs)
-        { 
-            subject: "PHYSICS", count: 7, name: "পদার্থবিজ্ঞান ২য় পত্র (গাণিতিক শর্টকাট সহ)", 
-            prompt: "Generate EXACTLY 7 Medical Admission MCQs in Bengali covering Physics 2nd Paper Chapters 1 to 11 (Dr. Gias Uddin, Prof. Ishaak 2026 Edition). MUST INCLUDE 3-4 calculator-free 1-3 second numerical MCQs (e.g. Equivalent resistance in Ohm's law, Half-life of radioisotopes, Wavelength, Thermodynamics efficiency)." 
-        },
-        
-        // English Grammar (10 Qs)
-        { 
-            subject: "ENGLISH", count: 10, name: "ইংরেজি গ্রামার ও ভোকাবুলারি", 
-            prompt: "Generate EXACTLY 10 Medical Admission English MCQs focusing on Synonyms, Antonyms, Appropriate Prepositions, Subject-Verb Agreement, and Correction." 
-        },
-        // English Practical (5 Qs)
-        { 
-            subject: "ENGLISH", count: 5, name: "ইংরেজি ব্যবহারিক ও ট্রান্সফরমেশন", 
-            prompt: "Generate EXACTLY 5 Medical Admission English MCQs focusing on Voice, Narration, Idioms & Phrases, and Sentence Transformation." 
-        },
-        
-        // GK (10 Qs)
-        { 
-            subject: "GK", count: 10, name: "সাম্প্রতিক সা.জ্ঞান ও ইতিহাস", 
-            prompt: `Generate EXACTLY 10 Medical Admission GK MCQs in Bengali covering Bangladesh History, 1971 Liberation War, Father of the Nation, and Live Current Affairs for year ${dateCtx.year} up to ${dateCtx.dateStr}.` 
-        },
-        // GK Ethics (5 Qs)
-        { 
-            subject: "GK", count: 5, name: "চিকিৎসা নৈতিকতা ও মানবিক গুণাবলী", 
-            prompt: "Generate EXACTLY 5 Medical Admission MCQs in Bengali covering Medical Ethics, Human Values, Professional Conduct, and Empathy in Patient Care." 
+            subject: "ENGLISH & GK", count: 30, name: "ইংরেজি ও সাধারণ জ্ঞান (নৈতিকতা সহ)", 
+            prompt: `Generate EXACTLY 30 Medical Admission MCQs in Bengali containing:
+            1. 15 English MCQs (Synonyms, Antonyms, Prepositions, Voice, Correction).
+            2. 10 GK MCQs (Bangladesh History, 1971 Liberation War, Father of the Nation, and Current Affairs for ${dateCtx.year} up to ${dateCtx.dateStr}).
+            3. 5 Medical Ethics MCQs (Ethical values & Professional Conduct).` 
         }
     ];
 
     try {
         for (let i = 0; i < subBatches.length; i++) {
             const b = subBatches[i];
-            document.getElementById('loading-text').innerText = `${b.name} প্রস্তুত হচ্ছে (${questions.length}/১০০)...`;
+            document.getElementById('loading-text').innerText = `${b.name} লোড হচ্ছে (${questions.length}/১০০)...`;
             
-            // Delay 1.8 seconds between calls to prevent Groq 429 Rate Limit
-            if (i > 0) await delay(1800);
-
-            let fetched = await fetchGroqBatchWithGuarantee(b.prompt, b.count, b.subject, dateCtx);
+            // Fetch batch with guaranteed 100% completion retry loop
+            let fetched = await fetchBatchGuaranteed(b.prompt, b.count, b.subject, dateCtx);
             questions = questions.concat(fetched);
+            
+            // Short 800ms delay between calls
+            if (i < subBatches.length - 1) await delay(800);
         }
 
         document.getElementById('loading-overlay').style.display = 'none';
         initQuiz();
     } catch (error) {
         console.error("Groq Generation Error:", error);
-        alert("প্রশ্ন তৈরি করতে সমস্যা হয়েছে। দয়া করে পেজটি আবার রিফ্রেশ দিন।");
+        alert("প্রশ্ন লোড করতে সমস্যা হয়েছে। দয়া করে পেজটি আবার রিফ্রেশ দিন।");
         document.getElementById('loading-overlay').style.display = 'none';
     }
 }
 
-// Guaranteed Fetcher: Retries up to 5 times if Groq fails or rate-limits
-async function fetchGroqBatchWithGuarantee(specificPrompt, expectedCount, subjectName, dateCtx) {
-    const primaryModel = "llama-3.3-70b-versatile";
-    const fallbackModel = "llama-3.1-8b-instant";
+async function fetchBatchGuaranteed(specificPrompt, expectedCount, subjectName, dateCtx) {
+    let resultQuestions = [];
     let attempts = 0;
+    
+    // Fast & highly available model
+    const modelName = "llama-3.1-8b-instant";
 
-    while (attempts < 5) {
+    while (resultQuestions.length < expectedCount && attempts < 4) {
         attempts++;
-        const currentModel = attempts > 2 ? fallbackModel : primaryModel;
+        const needed = expectedCount - resultQuestions.length;
         const uniqueSeed = `${Date.now()}_${Math.floor(Math.random() * 1000000)}_${attempts}`;
 
         const promptText = `You are an official Bangladesh Medical College Admission Test Question Setter.
         Live Date Context: ${dateCtx.dateStr}, Year: ${dateCtx.year}.
-        UNIQUE SESSION SEED: ${uniqueSeed}
+        UNIQUE SEED: ${uniqueSeed}
         
         TASK: ${specificPrompt}
+        Provide EXACTLY ${needed} unique MCQs in Bengali.
         
-        CRITICAL MEDICAL EXAM RULES:
-        1. GENERATE TOTALLY NEW & UNIQUE QUESTIONS using Seed ${uniqueSeed}.
-        2. MEDICAL NUMERICALS: Any mathematical question in Physics/Chemistry MUST be solvable without a calculator within 1 to 3 seconds using mental math, simple ratios, or direct shortcut formulas.
-        3. ABSOLUTE ACCURACY: Double check that the "answer" index (0 for A, 1 for B, 2 for C, 3 for D) EXACTLY corresponds to the correct answer according to 2026 Bangladeshi edition textbooks. Zero tolerance for wrong answers!
-        4. Reference: Include exact textbook author and chapter name in the "reference" field (e.g. "রেফারেন্স: ড. আবুল হাসান / হাজারী ও নাগ (২০২৬ সংস্করণ) - ৫ম অধ্যায়").
+        CRITICAL RULES:
+        1. Any mathematical question in Physics/Chemistry MUST be solvable without a calculator within 1 to 3 seconds using simple mental math or shortcuts.
+        2. Absolute Accuracy: Double check answer indices according to 2026 Bangladeshi edition textbooks.
+        3. Include exact textbook author and chapter name in "reference".
         
-        OUTPUT RAW JSON ONLY (NO MARKDOWN CODE BLOCK):
+        OUTPUT RAW JSON ONLY (NO MARKDOWN CODE BLOCKS):
         {
           "questions": [
             {
@@ -178,36 +143,39 @@ async function fetchGroqBatchWithGuarantee(specificPrompt, expectedCount, subjec
                     "Authorization": `Bearer ${groqApiKey}`
                 },
                 body: JSON.stringify({
-                    model: currentModel,
+                    model: modelName,
                     messages: [{ role: "user", content: promptText }],
                     temperature: 0.3,
-                    max_tokens: 3500,
+                    max_tokens: 4000,
                     response_format: { type: "json_object" }
                 })
             });
 
             if (response.status === 429) {
-                console.warn(`Rate limit hit (429). Retrying attempt ${attempts}...`);
-                await delay(3000); // Wait 3 seconds if rate limited
+                await delay(2500); // Pause if rate limited
                 continue;
             }
 
-            if (!response.ok) throw new Error(`Groq Status: ${response.status}`);
+            if (!response.ok) throw new Error(`Groq HTTP Error: ${response.status}`);
 
             const data = await response.json();
-            const parsedData = JSON.parse(data.choices[0].message.content);
-            const resList = parsedData.questions || parsedData.Questions || [];
+            let rawContent = data.choices[0].message.content;
+            
+            // Clean markdown formatting if present
+            rawContent = rawContent.replace(/```json/gi, '').replace(/```/g, '').trim();
+            const parsedData = JSON.parse(rawContent);
+            const batchQs = parsedData.questions || parsedData.Questions || [];
 
-            if (resList.length > 0) {
-                return resList.slice(0, expectedCount);
+            if (batchQs.length > 0) {
+                resultQuestions = resultQuestions.concat(batchQs);
             }
         } catch (err) {
-            console.error(`Batch Attempt ${attempts} Error:`, err);
-            await delay(2000);
+            console.warn(`Attempt ${attempts} failed. Retrying...`, err);
+            await delay(1500);
         }
     }
 
-    return [];
+    return resultQuestions.slice(0, expectedCount);
 }
 
 function initQuiz() {
