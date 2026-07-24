@@ -1,9 +1,10 @@
 :root {
-    --bg-color: #0b1120;
-    --card-bg: #151e32;
-    --card-border: #232f48;
-    --text-color: #f1f5f9;
-    --text-muted: #94a3b8;
+    --bg-color: #080d1a;
+    --card-bg: #111a2e;
+    --card-border: #1e2d4a;
+    --card-hover: #192742;
+    --text-main: #f8fafc;
+    --text-sub: #94a3b8;
     --primary-blue: #2563eb;
     --primary-hover: #1d4ed8;
     --accent-yellow: #f59e0b;
@@ -15,19 +16,24 @@
     margin: 0;
     padding: 0;
     box-sizing: border-box;
-    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    font-family: 'Hind Siliguri', 'Segoe UI', Tahoma, sans-serif;
 }
 
 body {
     background-color: var(--bg-color);
-    /* Custom Background Image Setup */
-    background-image: linear-gradient(rgba(11, 17, 32, 0.92), rgba(11, 17, 32, 0.92)), url('Md.Emtiaz Hoosain Sami.jpg');
+    
+    /* ==================================================================== */
+    /* 🖼️ তোমার ব্যাকগ্রাউন্ড ছবি সেট করার জায়গা:                          */
+    /* নিচের 'YOUR_BACKGROUND_IMAGE_URL_HERE' তুলে তোমার ছবির লিংক দাও।    */
+    /* ==================================================================== */
+    background-image: linear-gradient(rgba(8, 13, 26, 0.92), rgba(8, 13, 26, 0.92)), url('YOUR_BACKGROUND_IMAGE_URL_HERE');
+    
     background-size: cover;
     background-position: center;
     background-attachment: fixed;
-    color: var(--text-color);
+    color: var(--text-main);
     min-height: 100vh;
-    padding: 20px;
+    padding: 20px 15px;
 }
 
 .app-container {
@@ -35,75 +41,97 @@ body {
     margin: 0 auto;
 }
 
-/* Top Header */
+/* Header */
 .top-header {
     background: var(--card-bg);
     border: 1px solid var(--card-border);
-    border-radius: 12px;
-    padding: 15px 25px;
+    border-radius: 14px;
+    padding: 16px 24px;
     display: flex;
     justify-content: space-between;
     align-items: center;
     flex-wrap: wrap;
     gap: 15px;
     margin-bottom: 20px;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
 }
 
 .logo-area {
     display: flex;
     align-items: center;
-    gap: 15px;
+    gap: 14px;
 }
 
-.logo-icon {
-    font-size: 2rem;
-    color: var(--primary-blue);
+.avatar-icon {
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    background: rgba(37, 99, 235, 0.2);
+    border: 1px solid var(--primary-blue);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.4rem;
+    color: #60a5fa;
+}
+
+.logo-text h2 {
+    font-size: 1.25rem;
+    font-weight: 700;
+}
+
+.logo-text p {
+    font-size: 0.82rem;
+    color: var(--text-sub);
 }
 
 .header-controls {
     display: flex;
     align-items: center;
-    gap: 15px;
+    gap: 12px;
     flex-wrap: wrap;
 }
 
-.timer-box, .second-timer-box {
-    background: #0f172a;
+.control-box {
+    background: #0b1222;
     padding: 8px 14px;
     border-radius: 8px;
     border: 1px solid var(--card-border);
     display: flex;
     align-items: center;
-    gap: 10px;
-    font-size: 0.9rem;
+    gap: 8px;
+    font-size: 0.88rem;
 }
 
 select {
     background: var(--card-bg);
-    color: var(--text-color);
+    color: var(--text-main);
     border: 1px solid var(--card-border);
     padding: 4px 8px;
-    border-radius: 4px;
+    border-radius: 6px;
     cursor: pointer;
+    font-size: 0.85rem;
+    outline: none;
 }
 
 /* Banner Card */
 .banner-card {
     background: var(--card-bg);
     border: 1px solid var(--card-border);
-    border-radius: 12px;
-    padding: 20px;
+    border-radius: 14px;
+    padding: 22px;
     margin-bottom: 20px;
 }
 
 .banner-card h3 {
     margin-bottom: 12px;
-    font-size: 1.25rem;
+    font-size: 1.3rem;
+    font-weight: 700;
 }
 
 .badge-group {
     display: flex;
-    gap: 12px;
+    gap: 10px;
     margin-bottom: 12px;
     flex-wrap: wrap;
 }
@@ -111,20 +139,27 @@ select {
 .badge {
     padding: 6px 12px;
     border-radius: 20px;
-    font-size: 0.85rem;
-    font-weight: bold;
+    font-size: 0.82rem;
+    font-weight: 600;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    border: 1px solid transparent;
 }
 
-.badge.blue { background: rgba(37, 99, 235, 0.2); color: #60a5fa; }
-.badge.yellow { background: rgba(245, 158, 11, 0.2); color: #fcd34d; }
-.badge.red { background: rgba(239, 68, 68, 0.2); color: #fca5a5; }
+.badge.bio { background: rgba(16, 185, 129, 0.15); color: #34d399; border-color: rgba(16, 185, 129, 0.3); }
+.badge.chem { background: rgba(245, 158, 11, 0.15); color: #fbbf24; border-color: rgba(245, 158, 11, 0.3); }
+.badge.phys { background: rgba(37, 99, 235, 0.15); color: #60a5fa; border-color: rgba(37, 99, 235, 0.3); }
+.badge.eng { background: rgba(168, 85, 247, 0.15); color: #c084fc; border-color: rgba(168, 85, 247, 0.3); }
+.badge.gk { background: rgba(239, 68, 68, 0.15); color: #fca5a5; border-color: rgba(239, 68, 68, 0.3); }
 
 .banner-desc {
-    color: var(--text-muted);
+    color: var(--text-sub);
     font-size: 0.9rem;
+    line-height: 1.5;
 }
 
-/* Main Layout */
+/* Main Layout Grid */
 .main-layout {
     display: grid;
     grid-template-columns: 1fr 380px;
@@ -135,95 +170,133 @@ select {
 .quiz-section {
     background: var(--card-bg);
     border: 1px solid var(--card-border);
-    border-radius: 12px;
+    border-radius: 14px;
     padding: 25px;
     display: flex;
     flex-direction: column;
+    min-height: 500px;
 }
 
 .quiz-header {
     display: flex;
     justify-content: space-between;
-    margin-bottom: 20px;
-    color: var(--text-muted);
+    align-items: center;
+    margin-bottom: 22px;
+}
+
+.q-num {
+    font-weight: 600;
+    color: var(--text-sub);
+    font-size: 1rem;
 }
 
 .subject-tag {
     background: rgba(37, 99, 235, 0.2);
     color: #60a5fa;
-    padding: 3px 10px;
-    border-radius: 4px;
-    font-weight: bold;
+    padding: 4px 12px;
+    border-radius: 6px;
+    font-weight: 700;
     font-size: 0.8rem;
+    border: 1px solid rgba(37, 99, 235, 0.3);
 }
 
 .question-text {
-    font-size: 1.15rem;
+    font-size: 1.2rem;
+    font-weight: 600;
     line-height: 1.6;
     margin-bottom: 25px;
+    color: #ffffff;
 }
 
 .options-container {
     display: flex;
     flex-direction: column;
     gap: 12px;
-    margin-bottom: 30px;
+    margin-bottom: 20px;
 }
 
 .option-btn {
-    background: #0f172a;
+    background: #0b1222;
     border: 1px solid var(--card-border);
-    color: var(--text-color);
+    color: var(--text-main);
     padding: 14px 20px;
-    border-radius: 8px;
+    border-radius: 10px;
     text-align: left;
     cursor: pointer;
     transition: all 0.2s ease;
     display: flex;
     align-items: center;
     gap: 15px;
+    font-size: 1rem;
 }
 
 .option-btn:hover {
     border-color: var(--primary-blue);
-    background: rgba(37, 99, 235, 0.1);
+    background: var(--card-hover);
 }
 
 .option-btn.selected {
     border-color: var(--primary-blue);
     background: var(--primary-blue);
-    color: #fff;
+    color: #ffffff;
+}
+
+.option-btn.correct-ans {
+    border-color: var(--accent-green) !important;
+    background: rgba(16, 185, 129, 0.2) !important;
+    color: #34d399 !important;
+}
+
+.option-btn.wrong-ans {
+    border-color: var(--accent-red) !important;
+    background: rgba(239, 68, 68, 0.2) !important;
+    color: #fca5a5 !important;
 }
 
 .option-prefix {
-    width: 28px;
-    height: 28px;
+    width: 32px;
+    height: 32px;
     border-radius: 50%;
     background: rgba(255, 255, 255, 0.1);
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 0.85rem;
-    font-weight: bold;
+    font-size: 0.88rem;
+    font-weight: 700;
+    flex-shrink: 0;
 }
 
-/* OMR Section */
+/* Explanation Box */
+.explanation-box {
+    background: rgba(245, 158, 11, 0.1);
+    border: 1px solid rgba(245, 158, 11, 0.3);
+    border-radius: 10px;
+    padding: 16px;
+    margin-bottom: 25px;
+    color: #fef08a;
+}
+
+.explanation-box h4 {
+    margin-bottom: 6px;
+    color: var(--accent-yellow);
+    font-size: 0.95rem;
+}
+
+.explanation-box p {
+    font-size: 0.92rem;
+    line-height: 1.5;
+}
+
+/* OMR Sidebar */
 .omr-section {
     background: var(--card-bg);
     border: 1px solid var(--card-border);
-    border-radius: 12px;
+    border-radius: 14px;
     padding: 20px;
 }
 
-.omr-header h4 {
-    margin-bottom: 5px;
-}
-
-.omr-header p {
-    color: var(--text-muted);
-    font-size: 0.8rem;
-    margin-bottom: 15px;
-}
+.omr-header h4 { font-size: 1.1rem; margin-bottom: 4px; }
+.omr-header p { color: var(--text-sub); font-size: 0.82rem; margin-bottom: 16px; }
 
 .btn-submit {
     width: 100%;
@@ -232,14 +305,14 @@ select {
     padding: 12px;
     border: none;
     border-radius: 8px;
-    font-weight: bold;
+    font-weight: 700;
+    font-size: 0.95rem;
     cursor: pointer;
     margin-bottom: 20px;
+    transition: background 0.2s ease;
 }
 
-.btn-submit:hover {
-    background: #dc2626;
-}
+.btn-submit:hover { background: #dc2626; }
 
 .omr-grid {
     display: grid;
@@ -251,36 +324,29 @@ select {
 }
 
 .omr-btn {
-    background: #0f172a;
+    background: #0b1222;
     border: 1px solid var(--card-border);
-    color: var(--text-color);
-    padding: 8px 0;
+    color: var(--text-main);
+    padding: 9px 0;
     border-radius: 6px;
     cursor: pointer;
-    font-size: 0.85rem;
+    font-size: 0.88rem;
+    font-weight: 600;
 }
 
-.omr-btn.answered {
-    background: var(--primary-blue);
-    border-color: var(--primary-blue);
-}
+.omr-btn.answered { background: var(--primary-blue); border-color: var(--primary-blue); color: #fff; }
+.omr-btn.current { border: 2px solid var(--accent-yellow); }
 
-.omr-btn.current {
-    border: 2px solid var(--accent-yellow);
-}
+.quiz-footer-actions { display: flex; justify-content: space-between; margin-top: auto; }
 
-.quiz-footer-actions {
-    display: flex;
-    justify-content: space-between;
-    margin-top: auto;
-}
-
+/* Buttons */
 .btn {
     padding: 10px 18px;
     border-radius: 8px;
     border: none;
     cursor: pointer;
-    font-weight: bold;
+    font-weight: 700;
+    font-size: 0.88rem;
     display: inline-flex;
     align-items: center;
     gap: 8px;
@@ -288,39 +354,44 @@ select {
 
 .btn-primary { background: var(--primary-blue); color: white; }
 .btn-primary:hover { background: var(--primary-hover); }
-.btn-secondary { background: var(--card-border); color: white; }
 
-/* Loading Overlay for AI Generator */
+.btn-secondary { background: var(--card-border); color: white; }
+.btn-secondary:hover { background: var(--card-hover); }
+
+.btn-api { background: rgba(245, 158, 11, 0.2); color: #fcd34d; border: 1px solid rgba(245, 158, 11, 0.4); }
+
+/* Loading Overlay & Result Modal */
 .loading-overlay {
     display: none;
     position: fixed;
     top: 0; left: 0; width: 100%; height: 100%;
-    background: rgba(11, 17, 32, 0.95);
-    z-index: 2000;
-    flex-direction: column;
+    background: rgba(8, 13, 26, 0.95);
+    z-index: 3000;
     justify-content: center;
     align-items: center;
-    color: #fff;
-    text-align: center;
     padding: 20px;
 }
 
+.loader-card {
+    background: var(--card-bg);
+    border: 1px solid var(--card-border);
+    padding: 40px;
+    border-radius: 16px;
+    text-align: center;
+    max-width: 440px;
+}
+
 .spinner {
-    width: 55px;
-    height: 55px;
+    width: 55px; height: 55px;
     border: 5px solid var(--card-border);
     border-top: 5px solid var(--primary-blue);
     border-radius: 50%;
     animation: spin 1s linear infinite;
-    margin-bottom: 20px;
+    margin: 0 auto 20px auto;
 }
 
-@keyframes spin {
-    0% { transform: rotate(0deg); }
-    100% { transform: rotate(360deg); }
-}
+@keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
 
-/* Modal */
 .modal {
     display: none;
     position: fixed;
@@ -328,92 +399,37 @@ select {
     background: rgba(0, 0, 0, 0.85);
     justify-content: center;
     align-items: center;
-    z-index: 1000;
+    z-index: 2000;
 }
 
 .modal-content {
     background: var(--card-bg);
     border: 1px solid var(--card-border);
-    padding: 30px;
-    border-radius: 12px;
-    max-width: 450px;
+    padding: 32px;
+    border-radius: 16px;
+    max-width: 480px;
     width: 90%;
     text-align: center;
 }
 
-.result-details {
-    margin: 20px 0;
-    text-align: left;
-    line-height: 2;
-}
+.modal-icon { font-size: 3rem; color: var(--accent-yellow); margin-bottom: 10px; }
+.result-details { margin: 20px 0; text-align: left; }
+.res-row { display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid var(--card-border); font-size: 0.98rem; }
+.text-green { color: var(--accent-green); font-weight: bold; }
+.text-red { color: var(--accent-red); font-weight: bold; }
+.modal-actions { display: flex; flex-direction: column; gap: 10px; margin-top: 15px; }
 
-/* 📱 Full Mobile & Tablet Responsiveness */
+/* Fully Mobile & Tablet Responsive */
 @media (max-width: 992px) {
-    .main-layout {
-        grid-template-columns: 1fr;
-    }
+    .main-layout { grid-template-columns: 1fr; }
 }
 
 @media (max-width: 768px) {
-    body {
-        padding: 10px;
-    }
-
-    .top-header {
-        padding: 15px;
-        flex-direction: column;
-        align-items: flex-start;
-    }
-
-    .header-controls {
-        width: 100%;
-        justify-content: space-between;
-        gap: 10px;
-    }
-
-    .timer-box, .second-timer-box {
-        font-size: 0.8rem;
-        padding: 6px 10px;
-        flex: 1;
-    }
-
-    .quiz-section {
-        padding: 15px;
-    }
-
-    .question-text {
-        font-size: 1rem;
-    }
-
-    .option-btn {
-        padding: 12px 15px;
-        font-size: 0.9rem;
-    }
-
-    .omr-grid {
-        grid-template-columns: repeat(5, 1fr);
-        max-height: 300px;
-    }
-
-    .btn {
-        padding: 8px 14px;
-        font-size: 0.85rem;
-    }
-}
-
-@media (max-width: 480px) {
-    .badge-group {
-        flex-direction: column;
-        gap: 6px;
-    }
-    
-    .header-controls {
-        flex-direction: column;
-        align-items: stretch;
-    }
-    
-    .timer-box, .second-timer-box {
-        width: 100%;
-        justify-content: space-between;
-    }
+    body { padding: 10px; }
+    .top-header { padding: 15px; flex-direction: column; align-items: flex-start; }
+    .header-controls { width: 100%; justify-content: space-between; }
+    .control-box { flex: 1; font-size: 0.8rem; }
+    .question-text { font-size: 1.05rem; }
+    .option-btn { font-size: 0.9rem; padding: 12px 14px; }
+    .omr-grid { grid-template-columns: repeat(5, 1fr); max-height: 280px; }
 }
