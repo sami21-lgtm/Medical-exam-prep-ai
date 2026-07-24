@@ -10,7 +10,7 @@ function setApiKey() {
     let key = prompt("আপনার Google Gemini API Key প্রবেশ করান (ফ্রি API Key ব্যবহার করতে পারবেন):", apiKey);
     if (key) {
         apiKey = key.trim();
-        localStorage.setItem("GEMINI_API_KEY", apiKey);
+        localStorage.setItem("GROQCLOUD_API_KEY", apiKey);
         alert("API Key সফলভাবে সেভ হয়েছে!");
     }
 }
