@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>মেডিকেল ভর্তি AI প্র্যাকটিস অ্যাপ (১০০ নম্বর)</title>
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Marked.js for Markdown Formatting -->
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+    <!-- AI Generation Loading Overlay -->
+    <div id="loading-overlay" class="loading-overlay">
+        <div class="spinner"></div>
+        <h3 id="loading-text">AI নতুন ১০০টি মেডিকেল প্রশ্ন তৈরি করছে...</h3>
+        <p>জীববিজ্ঞান, রসায়ন, পদার্থবিজ্ঞান, ইংরেজি ও সাধারণ জ্ঞান থেকে প্রসেস করা হচ্ছে...</p>
+    </div>
+
+    <div class="app-container">
+        <!-- Top Navbar Header -->
+        <header class="top-header">
+            <div class="logo-area">
+                <i class="fa-solid fa-user-doctor logo-icon"></i>
+                <div>
+                    <h2>মেডিকেল ভর্তি ২য় বার স্পেশাল চর্চা</h2>
+                    <p>Unlimited AI Mock Test Series (100 Questions)</p>
+                </div>
+            </div>
+            
+            <div class="header-controls">
+                <button class="btn btn-secondary" onclick="setApiKey()"><i class="fa-solid fa-key"></i> AI Key</button>
+                <button class="btn btn-primary" onclick="generateUnlimitedQuestions()"><i class="fa-solid fa-wand-magic-sparkles"></i> নতুন ১০০ প্রশ্ন জেনারেট</button>
+
+                <div class="timer-box">
+                    <i class="fa-regular fa-clock"></i>
+                    <span>সময় বাকী: <strong id="timer">৬০:০০</strong></span>
+                </div>
+                
+                <div class="second-timer-box">
+                    <i class="fa-solid fa-graduation-cap"></i>
+                    <label for="second-timer-select">সেকেন্ড টাইমার কর্তন:</label>
+                    <select id="second-timer-select">
+                        <option value="0.00">১ম বার (০.০০)</option>
+                        <option value="5.00" selected>২য় বার (৫.০০)</option>
+                        <option value="7.50">২য় বার-ম্যাটস/ডিডি (৭.৫০)</option>
+                    </select>
+                </div>
+            </div>
+        </header>
+
+        <!-- Banner Info Card -->
+        <section class="banner-card">
+            <h3>মেডিকেল ভর্তি স্ট্যান্ডার্ড পূর্ণাঙ্গ সিলেবাস মক টেস্ট</h3>
+            <div class="badge-group">
+                <span class="badge blue"><i class="fa-solid fa-list-check"></i> মোট প্রশ্ন: ১০০টি</span>
+                <span class="badge yellow"><i class="fa-solid fa-star"></i> পূর্ণমান: ১০০.০০</span>
+                <span class="badge red"><i class="fa-solid fa-circle-minus"></i> নেগেটিভ মার্কিং: ০.২৫</span>
+            </div>
+            <p class="banner-desc">প্রতিটি সঠিক উত্তরের জন্য ১.০০ নম্বর যোগ হবে এবং প্রতিটি ভুল উত্তরের জন্য ০.২৫ নম্বর কাটা যাবে।</p>
+        </section>
+
+        <!-- Main Content Grid -->
+        <main class="main-layout">
+            <!-- Left: Question & Options Section -->
+            <section class="quiz-section">
+                <div class="quiz-header">
+                    <span id="question-number">প্রশ্ন নং: ১/১০০</span>
+                    <span id="subject-tag" class="subject-tag">BIOLOGY</span>
+                </div>
+                
+                <div id="question-text" class="question-text">
+                    <!-- Question text injected via JS -->
+                </div>
+
+                <div id="options-container" class="options-container">
+                    <!-- Options injected via JS -->
+                </div>
+
+                <div class="quiz-footer-actions">
+                    <button id="prev-btn" class="btn btn-secondary" onclick="prevQuestion()"><i class="fa-solid fa-arrow-left"></i> পূর্ববর্তী</button>
+                    <button id="next-btn" class="btn btn-primary" onclick="nextQuestion()">পরবর্তী <i class="fa-solid fa-arrow-right"></i></button>
+                </div>
+            </section>
+
+            <!-- Right: OMR Response Grid Section -->
+            <aside class="omr-section">
+                <div class="omr-header">
+                    <h4><i class="fa-solid fa-grip"></i> OMR রেসপন্স গ্রিড</h4>
+                    <p>যেকোনো নম্বরে ক্লিক করে সরাসরি প্রশ্ন দেখতে পারেন।</p>
+                    <button class="btn btn-submit" onclick="submitExam()"><i class="fa-solid fa-paper-plane"></i> উত্তরপত্র জমা দিন</button>
+                </div>
+                <div id="omr-grid" class="omr-grid">
+                    <!-- 100 OMR Buttons generated via JS -->
+                </div>
+            </aside>
+        </main>
+    </div>
+
+    <!-- Result Modal -->
+    <div id="result-modal" class="modal">
+        <div class="modal-content">
+            <h2><i class="fa-solid fa-trophy"></i> পরীক্ষার ফলাফল</h2>
+            <div class="result-details">
+                <p>মোট প্রাপ্ত নম্বর: <strong id="final-score">০.০০</strong> / ১০০</p>
+                <p>সঠিক উত্তর: <span id="correct-count">০</span>টি</p>
+                <p>ভুল উত্তর: <span id="wrong-count">০</span>টি</p>
+                <p>নেগেটিভ মার্কস: <span id="negative-marks">০.০০</span></p>
+                <p>২য় বার কর্তন: <span id="deduction-marks">৫.০০</span></p>
+            </div>
+            <button class="btn btn-primary" onclick="generateUnlimitedQuestions()"><i class="fa-solid fa-rotate-right"></i> নতুন ১০০টি প্রশ্নে আবার পরীক্ষা দিন</button>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
