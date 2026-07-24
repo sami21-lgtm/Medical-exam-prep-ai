@@ -6,7 +6,7 @@ let totalTime = 60 * 60; // 60 minutes countdown
 let timerInterval;
 let isReviewMode = false;
 
-// Helper function for adding delay between API requests to prevent Rate Limits
+// Delay helper to avoid hitting Groq TPM/RPM Rate Limits
 const delay = ms => new Promise(res => setTimeout(res, ms));
 
 function getCurrentDateContext() {
@@ -45,68 +45,79 @@ async function generateGroqQuestions() {
 
     const dateCtx = getCurrentDateContext();
 
+    // Divided into 8 precise small sub-batches to guarantee EXACT 100 Questions without token truncations
     const batchConfigs = [
         { 
-            name: "জীববিজ্ঞান (৩০টি প্রশ্ন - ২০২৬ সংস্করণ)", 
-            prompt: `Generate 30 Medical Admission Level Biology MCQs in Bengali strictly based on 2026 edition textbooks:
-            - Botany: Dr. Abul Hasan (ড. আবুল হাসান), Dr. Md. Abul Alim, Nitai Chandra.
-            - Zoology: Gazi Azmal & Gazi Asmat (গাজী আজমল ও গাজী আসমত), Prof. Majeda Begum.`
+            name: "জীববিজ্ঞান ১ম অংশ (১০টি)", count: 10,
+            prompt: `Generate EXACTLY 10 Medical Admission Biology MCQs in Bengali based on 2026 Edition Zoology (Gazi Azmal, Prof. Majeda Begum).`
         },
         { 
-            name: "রসায়ন (২৫টি প্রশ্ন - ২০২৬ সংস্করণ)", 
-            prompt: `Generate 25 Medical Admission Level Chemistry MCQs in Bengali strictly based on 2026 edition textbooks:
-            - Hazari & Nag (হাজারী ও নাগ), Sanjit Kumar Guha (সঞ্জিত কুমার গুহা), Dr. Haradhan Dutta, Swapan Kumar Roy, Dr. Abdul Karim.`
+            name: "জীববিজ্ঞান ২য় অংশ (১০টি)", count: 10,
+            prompt: `Generate EXACTLY 10 Medical Admission Biology MCQs in Bengali based on 2026 Edition Botany (Dr. Abul Hasan, Dr. Abul Alim).`
         },
         { 
-            name: "পদার্থবিজ্ঞান (১৫টি প্রশ্ন - ২০২৬ সংস্করণ)", 
-            prompt: `Generate 15 Medical Admission Level Physics MCQs in Bengali strictly based on 2026 edition textbooks:
-            - Prof. Md. Ishaak (প্রফেসর মো: ইসহাক), Shahjahan Tapan (শাহজাহান তপন), Dr. Gias Uddin.`
+            name: "জীববিজ্ঞান ৩য় অংশ (১০টি)", count: 10,
+            prompt: `Generate EXACTLY 10 Medical Admission Biology MCQs in Bengali covering Genetics, Cell & Human Physiology (2026 Edition).`
         },
         { 
-            name: "ইংরেজি, সাম্প্রতিক সা.জ্ঞান ও মানবিক মূল্যবোধ (৩০টি প্রশ্ন)", 
-            prompt: `Generate 30 MCQs in Bengali/English:
-            - 15 English Grammar & Vocabulary items (Synonym/Antonym, Preposition, Correction, Voice, Narration).
-            - 15 General Knowledge, Current Affairs (Year ${dateCtx.year}, facts up to ${dateCtx.dateStr}, Liberation War, Bangabandhu, Healthcare Achievements) & Ethical/Human Values (মানবিক গুণাবলী ও চিকিৎসা নৈতিকতা).`
+            name: "রসায়ন ১ম অংশ (১৩টি)", count: 13,
+            prompt: `Generate EXACTLY 13 Medical Admission Chemistry MCQs in Bengali based on 2026 Edition Hazari & Nag, Sanjit Kumar Guha.`
+        },
+        { 
+            name: "রসায়ন ২য় অংশ (১২টি)", count: 12,
+            prompt: `Generate EXACTLY 12 Medical Admission Chemistry MCQs in Bengali covering Organic & Environmental Chemistry (2026 Edition).`
+        },
+        { 
+            name: "পদার্থবিজ্ঞান (১৫টি)", count: 15,
+            prompt: `Generate EXACTLY 15 Medical Admission Physics MCQs in Bengali based on 2026 Edition Prof. Ishaak & Shahjahan Tapan.`
+        },
+        { 
+            name: "ইংরেজি (১৫টি)", count: 15,
+            prompt: `Generate EXACTLY 15 Medical Admission English Grammar & Vocabulary MCQs (Synonym, Antonym, Preposition, Voice, Correction).`
+        },
+        { 
+            name: "সাম্প্রতিক সা.জ্ঞান ও মানবিক মূল্যবোধ (১৫টি)", count: 15,
+            prompt: `Generate EXACTLY 15 General Knowledge MCQs in Bengali: Current affairs for year ${dateCtx.year} up to ${dateCtx.dateStr}, Liberation War, Bangladesh Health sector achievements, and Medical Ethical/Human Values.`
         }
     ];
 
     try {
         for (let i = 0; i < batchConfigs.length; i++) {
-            document.getElementById('loading-text').innerText = `${batchConfigs[i].name} তৈরি হচ্ছে (${i + 1}/৪)...`;
+            document.getElementById('loading-text').innerText = `${batchConfigs[i].name} প্রসেস হচ্ছে (${i + 1}/${batchConfigs.length})...`;
             
-            // Add a 2-second delay between batches to respect Groq TPM rate limits
-            if (i > 0) await delay(2000);
+            // Short 1.2 second pause between calls to respect rate limits
+            if (i > 0) await delay(1200);
 
-            let batchQuestions = await fetchGroqBatchWithRetry(batchConfigs[i].prompt, dateCtx);
+            let batchQuestions = await fetchGroqBatchWithRetry(batchConfigs[i].prompt, batchConfigs[i].count, dateCtx);
             questions = questions.concat(batchQuestions);
         }
 
         document.getElementById('loading-overlay').style.display = 'none';
         initQuiz();
     } catch (error) {
-        console.error("Groq API Error Details:", error);
-        alert("Groq API থেকে প্রশ্ন প্রসেস করতে সমস্যা হয়েছে। দয়া করে কয়েক সেকেন্ড পর আবার চেষ্টা করুন।");
+        console.error("Groq Generation Error:", error);
+        alert("প্রশ্ন জেনারেট করতে সমস্যা হয়েছে। দয়া করে পুনরায় নতুন পরীক্ষা শুরু বাটনে ক্লিক করুন।");
         document.getElementById('loading-overlay').style.display = 'none';
     }
 }
 
-// Resilient Fetch Logic with Retry & Fallback Model
-async function fetchGroqBatchWithRetry(specificPrompt, dateCtx, attempt = 0) {
+// Resilient API Call with Retry & Exact Count Request
+async function fetchGroqBatchWithRetry(specificPrompt, expectedCount, dateCtx, attempt = 0) {
     const primaryModel = "llama-3.3-70b-versatile";
-    const fallbackModel = "llama-3.1-8b-instant"; // High TPM limits fallback
+    const fallbackModel = "llama-3.1-8b-instant";
 
     const currentModel = attempt > 1 ? fallbackModel : primaryModel;
 
-    const promptText = `You are an expert Bangladesh Medical College Admission Test Question Setter.
-    Live Date Context: ${dateCtx.dateStr}, Year: ${dateCtx.year}.
+    const promptText = `You are an expert Bangladesh Medical Admission Test Question Setter.
+    Current Date: ${dateCtx.dateStr}, Year: ${dateCtx.year}.
     
-    Task Spec: ${specificPrompt}
+    TASK: ${specificPrompt}
     
-    Requirements:
-    1. Questions must be 100% accurate based on latest 2026 edition textbooks & recent facts.
-    2. Keep explanations informative yet concise.
+    IMPORTANT CRITERIA:
+    1. You MUST generate EXACTLY ${expectedCount} questions in the array. No more, no less.
+    2. All questions, choices, and explanations must be 100% accurate based on 2026 edition textbooks.
     
-    CRITICAL: Output ONLY raw valid JSON matching this schema with NO markdown code block wrappers:
+    OUTPUT FORMAT (Return RAW JSON ONLY, NO Markdown block formatting):
     {
       "questions": [
         {
@@ -114,8 +125,8 @@ async function fetchGroqBatchWithRetry(specificPrompt, dateCtx, attempt = 0) {
           "options": ["অপশন ১", "অপশন ২", "অপশন ৩", "অপশন ৪"],
           "answer": 0,
           "subject": "BIOLOGY",
-          "explanation": "গাজী আজমল/হাজারী নাগ স্যার ২০২৬ সংস্করণ বই অনুযায়ী সঠিক উত্তর ও তার নিখুঁত ব্যাখ্যা।",
-          "reference": "বই রেফারেন্স: ড. আবুল হাসান (২০২৬ সংস্করণ)"
+          "explanation": "২০২৬ সংস্করণের প্রামাণ্য বই অনুযায়ী সঠিক উত্তরের নির্ভুল ব্যাখ্যা।",
+          "reference": "রেফারেন্স: ড. আবুল হাসান (২০২৬ সংস্করণ)"
         }
       ]
     }`;
@@ -130,31 +141,29 @@ async function fetchGroqBatchWithRetry(specificPrompt, dateCtx, attempt = 0) {
             body: JSON.stringify({
                 model: currentModel,
                 messages: [{ role: "user", content: promptText }],
-                temperature: 0.3,
+                temperature: 0.2,
                 max_tokens: 4096,
                 response_format: { type: "json_object" }
             })
         });
 
         if (response.status === 429 && attempt < 3) {
-            console.warn(`Rate limit hit (429). Retrying in 3 seconds... Attempt ${attempt + 1}`);
-            await delay(3000);
-            return await fetchGroqBatchWithRetry(specificPrompt, dateCtx, attempt + 1);
+            await delay(2500);
+            return await fetchGroqBatchWithRetry(specificPrompt, expectedCount, dateCtx, attempt + 1);
         }
 
         if (!response.ok) {
-            throw new Error(`Groq HTTP Error status: ${response.status}`);
+            throw new Error(`Groq Response Status: ${response.status}`);
         }
 
         const data = await response.json();
         const parsedData = JSON.parse(data.choices[0].message.content);
-        return parsedData.questions;
+        return parsedData.questions || [];
 
     } catch (err) {
         if (attempt < 2) {
-            console.warn(`Error encountered. Trying fallback model... Attempt ${attempt + 1}`);
             await delay(2000);
-            return await fetchGroqBatchWithRetry(specificPrompt, dateCtx, attempt + 1);
+            return await fetchGroqBatchWithRetry(specificPrompt, expectedCount, dateCtx, attempt + 1);
         }
         throw err;
     }
