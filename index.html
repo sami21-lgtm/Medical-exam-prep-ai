@@ -3,8 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>মেডিকেল ভর্তি পরীক্ষা ২০২৬ - মডেল টেস্ট</title>
-    <!-- Your External CSS File -->
+    <title>মেডিকেল ভর্তি পরীক্ষা ২০২৬ - প্রো মডেল টেস্ট</title>
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
@@ -12,51 +11,55 @@
     <!-- Loading Overlay -->
     <div id="loading-overlay" class="loading-overlay" style="display:none;">
         <div class="spinner"></div>
-        <h3 id="loading-text">প্রশ্নপত্র তৈরি হচ্ছে, অনুগ্রহ করে অপেক্ষা করুন...</h3>
+        <h3 id="loading-text">প্রশ্নপত্র তৈরি হচ্ছে...</h3>
+        <p id="loading-subtext">অন অনুগ্রহ করে অপেক্ষা করুন</p>
+        <div class="progress-bar-container">
+            <div id="progress-bar" class="progress-bar"></div>
+        </div>
     </div>
 
-    <!-- Main Header -->
-    <div class="header">
+    <!-- Header -->
+    <header class="header">
         <div class="header-left">
             <div class="user-avatar">🏥</div>
             <div>
                 <h2>মেডিকেল ভর্তি পরীক্ষা ২০২৬</h2>
-                <small>Groq AI • Llama 3.3 Powered Full Syllabus Practice</small>
+                <small id="status-mode">অফলাইন + Groq AI অটো-জেনারেটর (ডুপ্লিকেট প্রতিরোধক)</small>
             </div>
         </div>
         
         <div class="header-actions">
-            <button class="btn-key" onclick="setApiKey()">🔑 Groq Key</button>
-            <button class="btn-start" onclick="generateGroqQuestions()">⚡ নতুন মডেল টেস্ট</button>
-            <button class="btn-history" onclick="openHistoryModal()">📜 পরীক্ষার হিস্ট্রি</button>
-            <div class="timer-box">⏱️ সময় বাকি: <span id="timer">০০:০০</span></div>
+            <button class="btn btn-key" onclick="setApiKey()">🔑 Groq Key</button>
+            <button class="btn btn-start" onclick="generateFull100Questions()">⚡ নতুন মডেল টেস্ট</button>
+            <button class="btn btn-history" onclick="openHistoryModal()">📜 পূর্ববর্তী হিস্ট্রি</button>
+            <div class="timer-box">⏱️ সময়: <span id="timer">৬০:০০</span></div>
             
             <div class="candidate-select">
-                👤 পরীক্ষার্থী টাইপ: 
                 <select id="candidate-type">
-                    <option value="0">১ম বার পরীক্ষার্থী (০.০০)</option>
-                    <option value="5">২য় বার পরীক্ষার্থী (-৫.০০)</option>
-                    <option value="7.5">ম্যাট/ডিডিএস শিক্ষার্থী (-৭.৫০)</option>
+                    <option value="0">১ম বার (০.০০)</option>
+                    <option value="5">২য় বার (-৫.০০)</option>
+                    <option value="7.5">ম্যাটস (-৭.৫০)</option>
                 </select>
             </div>
         </div>
-    </div>
+    </header>
 
-    <!-- Official Marks Distribution Banner -->
-    <div class="distribution-card">
+    <!-- Marks Distribution Banner -->
+    <section class="distribution-card">
         <h3>২০২৬ শিক্ষাবর্ষের অফিশিয়াল মেডিকেল ভর্তি পরীক্ষা মানবণ্টন</h3>
         <div class="subject-badges">
-            <button class="badge bio-badge active" onclick="selectSubjectFilter('FULL')">🧬 জীববিজ্ঞান: ৩০</button>
-            <button class="badge chem-badge" onclick="selectSubjectFilter('CHEM')">🧪 রসায়ন: ২৫</button>
-            <button class="badge phy-badge" onclick="selectSubjectFilter('PHY')">⚛️ পদার্থবিজ্ঞান: ১৫</button>
-            <button class="badge eng-badge" onclick="selectSubjectFilter('ENG')">🔤 ইংরেজি: ১৫</button>
-            <button class="badge gk-badge" onclick="selectSubjectFilter('GK')">🌐 সা.জ্ঞান ও মানবিক মূল্যবোধ: ১৫</button>
+            <button class="badge bio-badge active" onclick="selectSubjectFilter('FULL', event)">💯 পূর্ণাঙ্গ ১০০ নম্বর</button>
+            <button class="badge bio-badge" onclick="selectSubjectFilter('BIO', event)">🧬 জীববিজ্ঞান: ৩০</button>
+            <button class="badge chem-badge" onclick="selectSubjectFilter('CHEM', event)">🧪 রসায়ন: ২৫</button>
+            <button class="badge phy-badge" onclick="selectSubjectFilter('PHY', event)">⚛️ পদার্থবিজ্ঞান: ১৫</button>
+            <button class="badge eng-badge" onclick="selectSubjectFilter('ENG', event)">🔤 ইংরেজি: ১৫</button>
+            <button class="badge gk-badge" onclick="selectSubjectFilter('GK', event)">🌐 সা.জ্ঞান ও মানবিক: ১৫</button>
         </div>
-        <p class="dist-note">প্রতিটি সঠিক উত্তরের জন্য ১.০০ নম্বর যোগ হবে এবং ভুল উত্তরের জন্য ০.২৫ নম্বর কাটা যাবে। পরীক্ষা শেষে প্রতি প্রশ্নের নির্ভুল ব্যাখ্যা ও বইয়ের পৃষ্ঠা নম্বরসহ রেফারেন্স দেখতে পাবেন।</p>
-    </div>
+        <p class="info-text">প্রতিটি সঠিক উত্তরে +১.০০, ভুল উত্তরে -০.২৫। পরীক্ষা শেষে পৃষ্ঠা নম্বর সহ বিস্তারিত ব্যাখ্যা দেখতে পাবেন।</p>
+    </section>
 
-    <!-- Main Exam Container -->
-    <div class="main-container">
+    <!-- Main Section -->
+    <main class="main-container">
         <!-- Question Box Panel -->
         <div class="question-card">
             <div>
@@ -65,15 +68,9 @@
                     <span id="subject-tag" class="subject-tag">জীববিজ্ঞান</span>
                 </div>
 
-                <div id="question-text" class="question-text">
-                    প্রশ্নপত্র লোড করার জন্য "নতুন মডেল টেস্ট" বাটনে ক্লিক করুন...
-                </div>
+                <div id="question-text" class="question-text">প্রশ্নপত্র তৈরি হচ্ছে...</div>
+                <div id="options-container" class="options-container"></div>
 
-                <div id="options-container" class="options-container">
-                    <!-- Dynamic Options -->
-                </div>
-
-                <!-- Explanation Box -->
                 <div id="explanation-box" class="explanation-box" style="display:none;">
                     <div id="explanation-ref" class="ref-text"></div>
                     <div id="explanation-text" class="exp-text"></div>
@@ -81,60 +78,48 @@
             </div>
 
             <div class="q-footer">
-                <button class="nav-btn" onclick="prevQuestion()">⬅️ আগের প্রশ্ন</button>
-                <button class="submit-btn-bottom" onclick="submitExam()">🎯 উত্তরপত্র জমা দিন</button>
-                <button class="nav-btn" onclick="nextQuestion()">পরের প্রশ্ন ➡️</button>
+                <button class="btn btn-history" onclick="prevQuestion()">⬅️ আগের প্রশ্ন</button>
+                <button class="btn btn-danger" onclick="submitExam()">🎯 উত্তরপত্র জমা দিন</button>
+                <button class="btn btn-history" onclick="nextQuestion()">পরের প্রশ্ন ➡️</button>
             </div>
         </div>
 
-        <!-- OMR Response Grid Panel -->
-        <div class="omr-card">
+        <!-- OMR Response Grid Sidebar Panel -->
+        <aside class="omr-card">
             <h3>::: OMR রেসপন্স গ্রিড</h3>
             <p class="omr-subtext">যেকোনো নম্বরে চাপ দিয়ে সরাসরি ওই প্রশ্নে যান।</p>
-            <button class="btn-submit-omr" onclick="submitExam()">🚀 উত্তরপত্র জমা দিন</button>
-            
-            <div id="omr-grid" class="omr-grid">
-                <!-- OMR Buttons Dynamic -->
-            </div>
-        </div>
-    </div>
+            <button class="btn btn-danger btn-full" onclick="submitExam()">🚀 উত্তরপত্র জমা দিন</button>
+            <div id="omr-grid" class="omr-grid"></div>
+        </aside>
+    </main>
 
     <!-- Result Modal -->
     <div id="result-modal" class="modal-overlay" style="display:none;">
         <div class="modal-content">
             <h2>🎉 পরীক্ষার ফলাফল</h2>
-            <div class="result-score">
-                <span id="final-score">০.০০</span> <span style="font-size: 18px;">/ ১০০</span>
+            <div class="score-display">
+                <span id="final-score">০.০০</span> <span class="max-score">/ <span id="max-possible-score">১০০</span></span>
             </div>
-
-            <div class="result-details">
-                <div><span>সঠিক উত্তর:</span> <strong id="correct-count" style="color: #10b981;">০</strong></div>
-                <div><span>ভুল উত্তর:</span> <strong id="wrong-count" style="color: #ef4444;">০</strong></div>
-                <div><span>নেগেটিভ মার্কস (০.২৫):</span> <strong id="negative-marks" style="color: #ef4444;">০.০০</strong></div>
-                <div><span>পরীক্ষার্থীর কাটা নম্বর:</span> <strong id="deduction-marks" style="color: #f59e0b;">০.০০</strong></div>
+            <div class="result-breakdown">
+                <div class="breakdown-row"><span>সঠিক উত্তর:</span> <strong id="correct-count" class="text-success">০</strong></div>
+                <div class="breakdown-row"><span>ভুল উত্তর:</span> <strong id="wrong-count" class="text-danger">০</strong></div>
+                <div class="breakdown-row"><span>নেগেটিভ মার্কস:</span> <strong id="negative-marks" class="text-danger">০.০০</strong></div>
             </div>
-
-            <div style="display: flex; gap: 10px; justify-content: center;">
-                <button class="btn-start" onclick="reviewExam()">📖 উত্তরমালা ও সমাধান দেখুন</button>
-                <button class="btn-key" onclick="generateGroqQuestions()">🔄 নতুন পরীক্ষা</button>
-            </div>
+            <button class="btn btn-start" onclick="reviewExam()">📖 উত্তরমালা ও শর্টকাট সমাধান দেখুন</button>
         </div>
     </div>
 
-    <!-- Exam History Modal -->
+    <!-- History Modal -->
     <div id="history-modal" class="modal-overlay" style="display:none;">
-        <div class="modal-content history-content">
-            <div style="display:flex; justify-style:space-between; align-items:center; margin-bottom:15px;">
-                <h3>📜 পূর্ববর্তী পরীক্ষার রেকর্ড ও উত্তরমালা</h3>
-                <button onclick="closeHistoryModal()" style="cursor:pointer;">✖ বন্ধ করুন</button>
+        <div class="modal-content modal-large">
+            <div class="modal-header">
+                <h3>📜 পূর্ববর্তী পরীক্ষার হিস্ট্রি (বুক রেফারেন্স সহ)</h3>
+                <button onclick="closeHistoryModal()" class="btn btn-history">✖ বন্ধ করুন</button>
             </div>
-            <div id="history-list" class="history-list">
-                <!-- Saved exam items will appear here -->
-            </div>
+            <div id="history-list" class="history-list"></div>
         </div>
     </div>
 
-    <!-- External Script File -->
     <script src="script.js"></script>
 </body>
 </html>
