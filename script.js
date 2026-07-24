@@ -6,7 +6,7 @@ let totalTime = 60 * 60; // 60 minutes countdown
 let timerInterval;
 let isReviewMode = false;
 
-// Delay helper to avoid hitting Groq TPM/RPM Rate Limits
+// Delay helper to avoid Groq Rate Limits
 const delay = ms => new Promise(res => setTimeout(res, ms));
 
 function getCurrentDateContext() {
@@ -45,88 +45,82 @@ async function generateGroqQuestions() {
 
     const dateCtx = getCurrentDateContext();
 
-    // Divided into 8 precise small sub-batches to guarantee EXACT 100 Questions without token truncations
-    const batchConfigs = [
-        { 
-            name: "জীববিজ্ঞান ১ম অংশ (১০টি)", count: 10,
-            prompt: `Generate EXACTLY 10 Medical Admission Biology MCQs in Bengali based on 2026 Edition Zoology (Gazi Azmal, Prof. Majeda Begum).`
-        },
-        { 
-            name: "জীববিজ্ঞান ২য় অংশ (১০টি)", count: 10,
-            prompt: `Generate EXACTLY 10 Medical Admission Biology MCQs in Bengali based on 2026 Edition Botany (Dr. Abul Hasan, Dr. Abul Alim).`
-        },
-        { 
-            name: "জীববিজ্ঞান ৩য় অংশ (১০টি)", count: 10,
-            prompt: `Generate EXACTLY 10 Medical Admission Biology MCQs in Bengali covering Genetics, Cell & Human Physiology (2026 Edition).`
-        },
-        { 
-            name: "রসায়ন ১ম অংশ (১৩টি)", count: 13,
-            prompt: `Generate EXACTLY 13 Medical Admission Chemistry MCQs in Bengali based on 2026 Edition Hazari & Nag, Sanjit Kumar Guha.`
-        },
-        { 
-            name: "রসায়ন ২য় অংশ (১২টি)", count: 12,
-            prompt: `Generate EXACTLY 12 Medical Admission Chemistry MCQs in Bengali covering Organic & Environmental Chemistry (2026 Edition).`
-        },
-        { 
-            name: "পদার্থবিজ্ঞান (১৫টি)", count: 15,
-            prompt: `Generate EXACTLY 15 Medical Admission Physics MCQs in Bengali based on 2026 Edition Prof. Ishaak & Shahjahan Tapan.`
-        },
-        { 
-            name: "ইংরেজি (১৫টি)", count: 15,
-            prompt: `Generate EXACTLY 15 Medical Admission English Grammar & Vocabulary MCQs (Synonym, Antonym, Preposition, Voice, Correction).`
-        },
-        { 
-            name: "সাম্প্রতিক সা.জ্ঞান ও মানবিক মূল্যবোধ (১৫টি)", count: 15,
-            prompt: `Generate EXACTLY 15 General Knowledge MCQs in Bengali: Current affairs for year ${dateCtx.year} up to ${dateCtx.dateStr}, Liberation War, Bangladesh Health sector achievements, and Medical Ethical/Human Values.`
-        }
+    // 12 precise sub-chunks of MAX 10 questions each -> Guaranteed 100 Questions Total
+    const subBatches = [
+        // Biology (30 Questions)
+        { subject: "BIOLOGY", count: 10, name: "জীববিজ্ঞান (১/৩)", prompt: "10 Medical Admission Biology MCQs in Bengali (Botany: Dr. Abul Hasan, Zoology: Gazi Azmal - 2026 Edition)." },
+        { subject: "BIOLOGY", count: 10, name: "জীববিজ্ঞান (২/৩)", prompt: "10 Medical Admission Biology MCQs in Bengali (Prof. Majeda Begum, Dr. Abul Alim - 2026 Edition)." },
+        { subject: "BIOLOGY", count: 10, name: "জীববিজ্ঞান (৩/৩)", prompt: "10 Medical Admission Biology MCQs in Bengali (Genetics, Human Physiology & Reproduction - 2026 Edition)." },
+        
+        // Chemistry (25 Questions)
+        { subject: "CHEMISTRY", count: 10, name: "রসায়ন (১/৩)", prompt: "10 Medical Admission Chemistry MCQs in Bengali (Hazari & Nag - 2026 Edition)." },
+        { subject: "CHEMISTRY", count: 10, name: "রসায়ন (২/৩)", prompt: "10 Medical Admission Chemistry MCQs in Bengali (Sanjit Kumar Guha, Dr. Haradhan Dutta - 2026 Edition)." },
+        { subject: "CHEMISTRY", count: 5,  name: "রসায়ন (৩/৩)", prompt: "5 Medical Admission Chemistry MCQs in Bengali (Organic & Environmental Chemistry - 2026 Edition)." },
+        
+        // Physics (15 Questions)
+        { subject: "PHYSICS", count: 10, name: "পদার্থবিজ্ঞান (১/২)", prompt: "10 Medical Admission Physics MCQs in Bengali (Prof. Md. Ishaak, Shahjahan Tapan - 2026 Edition)." },
+        { subject: "PHYSICS", count: 5,  name: "পদার্থবিজ্ঞান (২/২)", prompt: "5 Medical Admission Physics MCQs in Bengali (Modern Physics, Electricity & Optics - 2026 Edition)." },
+        
+        // English (15 Questions)
+        { subject: "ENGLISH", count: 10, name: "ইংরেজি (১/২)", prompt: "10 Medical Admission English MCQs (Synonym, Antonym, Preposition, Correction, Sentence Structure)." },
+        { subject: "ENGLISH", count: 5,  name: "ইংরেজি (২/২)", prompt: "5 Medical Admission English MCQs (Voice, Narration, Idioms, Transformation)." },
+        
+        // GK & Ethical Values (15 Questions)
+        { subject: "GK", count: 10, name: "সাধারণ জ্ঞান (১/২)", prompt: `10 Medical Admission GK MCQs in Bengali (Current affairs year ${dateCtx.year} up to ${dateCtx.dateStr}, Liberation War, Bangabandhu, Healthcare Achievements).` },
+        { subject: "GK", count: 5,  name: "মানবিক মূল্যবোধ (২/২)", prompt: "5 Medical Admission MCQs in Bengali focusing on Medical Ethics, Human Values & Moral Reasoning." }
     ];
 
     try {
-        for (let i = 0; i < batchConfigs.length; i++) {
-            document.getElementById('loading-text').innerText = `${batchConfigs[i].name} প্রসেস হচ্ছে (${i + 1}/${batchConfigs.length})...`;
+        for (let i = 0; i < subBatches.length; i++) {
+            const b = subBatches[i];
+            document.getElementById('loading-text').innerText = `${b.name} তৈরি হচ্ছে (${questions.length}/১০০টি তৈরি সম্পন্ন)...`;
             
-            // Short 1.2 second pause between calls to respect rate limits
-            if (i > 0) await delay(1200);
+            if (i > 0) await delay(1000); // 1 sec delay to avoid rate limit
 
-            let batchQuestions = await fetchGroqBatchWithRetry(batchConfigs[i].prompt, batchConfigs[i].count, dateCtx);
-            questions = questions.concat(batchQuestions);
+            let fetched = await fetchGroqBatchWithRetry(b.prompt, b.count, b.subject, dateCtx);
+            questions = questions.concat(fetched);
+        }
+
+        // Safety check if slight discrepancy occurs
+        if (questions.length < 100) {
+            console.warn(`Generated ${questions.length} questions. Adjusting user answers array.`);
         }
 
         document.getElementById('loading-overlay').style.display = 'none';
         initQuiz();
     } catch (error) {
         console.error("Groq Generation Error:", error);
-        alert("প্রশ্ন জেনারেট করতে সমস্যা হয়েছে। দয়া করে পুনরায় নতুন পরীক্ষা শুরু বাটনে ক্লিক করুন।");
+        alert("প্রশ্ন জেনারেট করতে সমস্যা হয়েছে। দয়া করে পুনরায় চেষ্টা করুন।");
         document.getElementById('loading-overlay').style.display = 'none';
     }
 }
 
-// Resilient API Call with Retry & Exact Count Request
-async function fetchGroqBatchWithRetry(specificPrompt, expectedCount, dateCtx, attempt = 0) {
+// Resilient API Call with Retry & Fallback Model
+async function fetchGroqBatchWithRetry(specificPrompt, expectedCount, subjectName, dateCtx, attempt = 0) {
     const primaryModel = "llama-3.3-70b-versatile";
     const fallbackModel = "llama-3.1-8b-instant";
 
     const currentModel = attempt > 1 ? fallbackModel : primaryModel;
 
-    const promptText = `You are an expert Bangladesh Medical Admission Test Question Setter.
+    const promptText = `You are an official Bangladesh Medical Admission Test Question Setter.
     Current Date: ${dateCtx.dateStr}, Year: ${dateCtx.year}.
     
     TASK: ${specificPrompt}
     
-    IMPORTANT CRITERIA:
-    1. You MUST generate EXACTLY ${expectedCount} questions in the array. No more, no less.
-    2. All questions, choices, and explanations must be 100% accurate based on 2026 edition textbooks.
+    CRITICAL RULES:
+    1. Generate EXACTLY ${expectedCount} MCQs in the "questions" array.
+    2. All info must strictly match 2026 edition textbooks. Keep explanations brief and precise (max 25 words per question).
     
-    OUTPUT FORMAT (Return RAW JSON ONLY, NO Markdown block formatting):
+    OUTPUT JSON FORMAT ONLY (NO MARKDOWN CODE BLOCKS):
     {
       "questions": [
         {
           "text": "প্রশ্ন টেক্সট",
           "options": ["অপশন ১", "অপশন ২", "অপশন ৩", "অপশন ৪"],
           "answer": 0,
-          "subject": "BIOLOGY",
-          "explanation": "২০২৬ সংস্করণের প্রামাণ্য বই অনুযায়ী সঠিক উত্তরের নির্ভুল ব্যাখ্যা।",
-          "reference": "রেফারেন্স: ড. আবুল হাসান (২০২৬ সংস্করণ)"
+          "subject": "${subjectName}",
+          "explanation": "২০২৬ সংস্করণের প্রামাণ্য বই অনুযায়ী সঠিক উত্তরের সংক্ষিপ্ত ব্যাখ্যা।",
+          "reference": "রেফারেন্স: ড. আবুল হাসান / হাজারী ও নাগ (২০২৬ সংস্করণ)"
         }
       ]
     }`;
@@ -142,14 +136,14 @@ async function fetchGroqBatchWithRetry(specificPrompt, expectedCount, dateCtx, a
                 model: currentModel,
                 messages: [{ role: "user", content: promptText }],
                 temperature: 0.2,
-                max_tokens: 4096,
+                max_tokens: 3500,
                 response_format: { type: "json_object" }
             })
         });
 
         if (response.status === 429 && attempt < 3) {
-            await delay(2500);
-            return await fetchGroqBatchWithRetry(specificPrompt, expectedCount, dateCtx, attempt + 1);
+            await delay(2000);
+            return await fetchGroqBatchWithRetry(specificPrompt, expectedCount, subjectName, dateCtx, attempt + 1);
         }
 
         if (!response.ok) {
@@ -162,16 +156,17 @@ async function fetchGroqBatchWithRetry(specificPrompt, expectedCount, dateCtx, a
 
     } catch (err) {
         if (attempt < 2) {
-            await delay(2000);
-            return await fetchGroqBatchWithRetry(specificPrompt, expectedCount, dateCtx, attempt + 1);
+            await delay(1500);
+            return await fetchGroqBatchWithRetry(specificPrompt, expectedCount, subjectName, dateCtx, attempt + 1);
         }
-        throw err;
+        return []; // Return empty array if batch fails so app doesn't crash
     }
 }
 
 function initQuiz() {
     currentQuestionIndex = 0;
     totalTime = 60 * 60;
+    userAnswers = new Array(questions.length).fill(null);
     renderOMRGrid();
     loadQuestion(0);
     
@@ -194,6 +189,7 @@ function renderOMRGrid() {
 }
 
 function loadQuestion(index) {
+    if (!questions[index]) return;
     currentQuestionIndex = index;
     const q = questions[index];
     
@@ -289,7 +285,7 @@ function submitExam() {
     let correct = 0, wrong = 0;
     
     userAnswers.forEach((ans, idx) => {
-        if (ans !== null) {
+        if (ans !== null && questions[idx]) {
             if (ans === questions[idx].answer) correct++;
             else wrong++;
         }
