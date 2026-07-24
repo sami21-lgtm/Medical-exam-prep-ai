@@ -6,7 +6,9 @@ let totalTime = 60 * 60; // 60 minutes countdown
 let timerInterval;
 let isReviewMode = false;
 
-// Get dynamic Date Context for daily live GK & Current Affairs
+// Helper function for adding delay between API requests to prevent Rate Limits
+const delay = ms => new Promise(res => setTimeout(res, ms));
+
 function getCurrentDateContext() {
     const today = new Date();
     const options = { year: 'numeric', month: 'long', day: 'numeric' };
@@ -16,7 +18,6 @@ function getCurrentDateContext() {
     };
 }
 
-// Ask or Change Groq API Key
 function setApiKey() {
     let key = prompt("আপনার Groq Cloud (gsk_...) API Key লিখুন:", groqApiKey);
     if (key) {
@@ -26,7 +27,6 @@ function setApiKey() {
     }
 }
 
-// Generate 100 Questions with 2026 Edition Textbooks & Live GK
 async function generateGroqQuestions() {
     if (!groqApiKey) {
         setApiKey();
@@ -45,7 +45,6 @@ async function generateGroqQuestions() {
 
     const dateCtx = getCurrentDateContext();
 
-    // 100 Questions divided into 4 batches (Bio 30, Chem 25, Phys 15, Eng+GK 30)
     const batchConfigs = [
         { 
             name: "জীববিজ্ঞান (৩০টি প্রশ্ন - ২০২৬ সংস্করণ)", 
@@ -74,21 +73,30 @@ async function generateGroqQuestions() {
     try {
         for (let i = 0; i < batchConfigs.length; i++) {
             document.getElementById('loading-text').innerText = `${batchConfigs[i].name} তৈরি হচ্ছে (${i + 1}/৪)...`;
-            let batchQuestions = await fetchGroqBatch(batchConfigs[i].prompt, dateCtx);
+            
+            // Add a 2-second delay between batches to respect Groq TPM rate limits
+            if (i > 0) await delay(2000);
+
+            let batchQuestions = await fetchGroqBatchWithRetry(batchConfigs[i].prompt, dateCtx);
             questions = questions.concat(batchQuestions);
         }
 
         document.getElementById('loading-overlay').style.display = 'none';
         initQuiz();
     } catch (error) {
-        console.error(error);
-        alert("Groq API থেকে প্রশ্ন আনতে সমস্যা হয়েছে। API Key টি পরীক্ষা করুন।");
+        console.error("Groq API Error Details:", error);
+        alert("Groq API থেকে প্রশ্ন প্রসেস করতে সমস্যা হয়েছে। দয়া করে কয়েক সেকেন্ড পর আবার চেষ্টা করুন।");
         document.getElementById('loading-overlay').style.display = 'none';
     }
 }
 
-// Groq API Call Handler (llama-3.3-70b-versatile)
-async function fetchGroqBatch(specificPrompt, dateCtx) {
+// Resilient Fetch Logic with Retry & Fallback Model
+async function fetchGroqBatchWithRetry(specificPrompt, dateCtx, attempt = 0) {
+    const primaryModel = "llama-3.3-70b-versatile";
+    const fallbackModel = "llama-3.1-8b-instant"; // High TPM limits fallback
+
+    const currentModel = attempt > 1 ? fallbackModel : primaryModel;
+
     const promptText = `You are an expert Bangladesh Medical College Admission Test Question Setter.
     Live Date Context: ${dateCtx.dateStr}, Year: ${dateCtx.year}.
     
@@ -96,7 +104,7 @@ async function fetchGroqBatch(specificPrompt, dateCtx) {
     
     Requirements:
     1. Questions must be 100% accurate based on latest 2026 edition textbooks & recent facts.
-    2. Provide clear options, correct answer index, and a detailed explanation citing the author/book reference.
+    2. Keep explanations informative yet concise.
     
     CRITICAL: Output ONLY raw valid JSON matching this schema with NO markdown code block wrappers:
     {
@@ -112,26 +120,46 @@ async function fetchGroqBatch(specificPrompt, dateCtx) {
       ]
     }`;
 
-    const response = await fetch("https://api.groq.com/openai/v1/chat/completions", {
-        method: "POST",
-        headers: {
-            "Content-Type": "application/json",
-            "Authorization": `Bearer ${groqApiKey}`
-        },
-        body: JSON.stringify({
-            model: "llama-3.3-70b-versatile",
-            messages: [{ role: "user", content: promptText }],
-            temperature: 0.3,
-            response_format: { type: "json_object" }
-        })
-    });
+    try {
+        const response = await fetch("https://api.groq.com/openai/v1/chat/completions", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+                "Authorization": `Bearer ${groqApiKey}`
+            },
+            body: JSON.stringify({
+                model: currentModel,
+                messages: [{ role: "user", content: promptText }],
+                temperature: 0.3,
+                max_tokens: 4096,
+                response_format: { type: "json_object" }
+            })
+        });
 
-    const data = await response.json();
-    const parsedData = JSON.parse(data.choices[0].message.content);
-    return parsedData.questions;
+        if (response.status === 429 && attempt < 3) {
+            console.warn(`Rate limit hit (429). Retrying in 3 seconds... Attempt ${attempt + 1}`);
+            await delay(3000);
+            return await fetchGroqBatchWithRetry(specificPrompt, dateCtx, attempt + 1);
+        }
+
+        if (!response.ok) {
+            throw new Error(`Groq HTTP Error status: ${response.status}`);
+        }
+
+        const data = await response.json();
+        const parsedData = JSON.parse(data.choices[0].message.content);
+        return parsedData.questions;
+
+    } catch (err) {
+        if (attempt < 2) {
+            console.warn(`Error encountered. Trying fallback model... Attempt ${attempt + 1}`);
+            await delay(2000);
+            return await fetchGroqBatchWithRetry(specificPrompt, dateCtx, attempt + 1);
+        }
+        throw err;
+    }
 }
 
-// Initialize Exam Engine
 function initQuiz() {
     currentQuestionIndex = 0;
     totalTime = 60 * 60;
@@ -142,7 +170,6 @@ function initQuiz() {
     startTimer();
 }
 
-// Render 100 OMR Grid Buttons
 function renderOMRGrid() {
     const gridContainer = document.getElementById('omr-grid');
     gridContainer.innerHTML = '';
@@ -157,7 +184,6 @@ function renderOMRGrid() {
     }
 }
 
-// Load Question to UI
 function loadQuestion(index) {
     currentQuestionIndex = index;
     const q = questions[index];
@@ -189,7 +215,6 @@ function loadQuestion(index) {
         optionsContainer.appendChild(btn);
     });
 
-    // Explanation Box Display in Review Mode
     const explanationBox = document.getElementById('explanation-box');
     if (isReviewMode) {
         explanationBox.style.display = 'block';
@@ -204,7 +229,6 @@ function loadQuestion(index) {
     updateOMRHighlight();
 }
 
-// Select Option Handler
 function selectOption(optionIndex) {
     if (isReviewMode) return;
     userAnswers[currentQuestionIndex] = optionIndex;
@@ -217,7 +241,6 @@ function selectOption(optionIndex) {
     updateOMRHighlight();
 }
 
-// Update OMR Grid Visual State
 function updateOMRHighlight() {
     for (let i = 0; i < questions.length; i++) {
         const omrBtn = document.getElementById(`omr-${i}`);
@@ -237,7 +260,6 @@ function prevQuestion() {
     if (currentQuestionIndex > 0) loadQuestion(currentQuestionIndex - 1);
 }
 
-// Countdown Timer Handler
 function startTimer() {
     timerInterval = setInterval(() => {
         if (totalTime <= 0) {
@@ -253,7 +275,6 @@ function startTimer() {
     }, 1000);
 }
 
-// Submit Exam & Score Calculation
 function submitExam() {
     clearInterval(timerInterval);
     let correct = 0, wrong = 0;
@@ -278,7 +299,6 @@ function submitExam() {
     document.getElementById('result-modal').style.display = 'flex';
 }
 
-// Review Mode Activation
 function reviewExam() {
     isReviewMode = true;
     document.getElementById('result-modal').style.display = 'none';
